@@ -23,26 +23,39 @@ document.addEventListener('DOMContentLoaded', function () {
   animateStats();
 });
 
-// Visitor counter
+// Visitor counter using api.visitorbadge.io
 function initVisitorCounter() {
   var counterEl = document.getElementById('visitor-count');
   if (!counterEl) return;
 
-  var STORAGE_KEY = 'torch_visitor_count';
-  var SESSION_KEY = 'torch_session_counted';
-
-  // Get current count
-  var count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
-
-  // Only increment if this is a new session
-  if (!sessionStorage.getItem(SESSION_KEY)) {
-    count++;
-    localStorage.setItem(STORAGE_KEY, count.toString());
-    sessionStorage.setItem(SESSION_KEY, 'true');
-  }
-
-  // Animate the counter number
-  animateNumber(counterEl, 0, count, 1200);
+  // The hidden badge img in HTML increments the count on each page load.
+  // Fetch the SVG badge and parse the visitor number from it.
+  fetch('https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Ftorch-scioly.github.io&countColor=%231a5276')
+    .then(function (res) { return res.text(); })
+    .then(function (svg) {
+      // The SVG contains the count as text, extract the number
+      var match = svg.match(/>(\d[\d,]*)<\/text>\s*<\/g>\s*<\/svg>/);
+      if (!match) {
+        // Try alternate pattern
+        match = svg.match(/textLength[^>]*>(\d[\d,]*)</);
+      }
+      if (match) {
+        var count = parseInt(match[1].replace(/,/g, ''), 10);
+        animateNumber(counterEl, 0, count, 1200);
+      } else {
+        counterEl.textContent = '...';
+      }
+    })
+    .catch(function () {
+      // Fallback to localStorage count
+      var stored = parseInt(localStorage.getItem('torch_visitors') || '0', 10);
+      if (!sessionStorage.getItem('torch_counted')) {
+        stored++;
+        localStorage.setItem('torch_visitors', stored.toString());
+        sessionStorage.setItem('torch_counted', 'true');
+      }
+      animateNumber(counterEl, 0, stored, 1200);
+    });
 }
 
 // Animate a number from start to end
