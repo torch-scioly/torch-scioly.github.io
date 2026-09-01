@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <div class="floating-banner" id="tryout-banner">
+    <div class="banner-content">
+      <span class="banner-icon">&#128227;</span>
+      <span><strong>Tryouts:</strong> Sept 3 &amp; Sept 4, 2026 — After School</span>
+      <button class="banner-close" id="banner-close" aria-label="Close banner">&times;</button>
+    </div>
+  </div>
+
   <nav class="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-logo">
@@ -26,11 +34,6 @@
     <h1>TORCH</h1>
     <p class="tagline">Tutoring Our Rising Champions and High-achievers — high school volunteers teaching Science Olympiad courses at Quail Valley Middle School.</p>
     <a href="courses.html" class="cta-btn">Explore Our Courses</a>
-    <div class="visitor-counter mt-2">
-      <span class="counter-dot"></span>
-      <span><span class="counter-number" id="visitor-count">-</span> visitors and counting</span>
-    </div>
-    <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Ftorch-scioly.github.io&countColor=%231a5276" alt="" style="display:none;" id="visitor-badge">
   </section>
 
   <div class="stats-bar">
@@ -92,14 +95,98 @@
   </section>
 
   <section class="section">
-    <h2 class="section-title">Featured Upcoming Event</h2>
-    <div class="featured-event">
-      <h3>LASSO Satellite Invitational</h3>
-      <p>Satellite invitational hosted by LASA Science Olympiad in Austin, TX. Open to Division B (middle school) and Division C (high school) teams.</p>
-      <div class="card-meta">
-        <span class="badge badge-orange">Oct 17, 2026</span>
-        <span class="badge badge-blue">Austin, TX</span>
-        <span class="badge badge-green">Div. B &amp; C</span>
+    <h2 class="section-title">Upcoming Events</h2>
+    <p class="section-subtitle">Competitions and events on the horizon</p>
+
+    <div class="event-card">
+      <div class="event-date-box" style="background:var(--accent);">
+        <div class="month">Sep</div>
+        <div class="day">3-4</div>
+        <div class="year">2026</div>
+      </div>
+      <div class="event-details">
+        <h3>TORCH Tryouts</h3>
+        <p>Science Olympiad team tryouts at Quail Valley Middle School. Both days after school. Tryouts based on your interest form event selections.</p>
+        <div class="card-meta">
+          <span class="badge badge-orange">After School</span>
+          <span class="badge badge-red">No Binders Allowed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="event-card">
+      <div class="event-date-box">
+        <div class="month">Oct</div>
+        <div class="day">17</div>
+        <div class="year">2026</div>
+      </div>
+      <div class="event-details">
+        <h3>LASSO Satellite Invitational</h3>
+        <p>Satellite invitational hosted by LASA Science Olympiad in Austin, TX. Open to Division B (middle school) and Division C (high school) teams.</p>
+        <div class="card-meta">
+          <span class="badge badge-blue">Austin, TX</span>
+          <span class="badge badge-green">Div. B &amp; C</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="event-card">
+      <div class="event-date-box">
+        <div class="month">Nov</div>
+        <div class="day">7</div>
+        <div class="year">2026</div>
+      </div>
+      <div class="event-details">
+        <h3>Cypress Falls Invitational</h3>
+        <p>Invitational tournament in Houston, TX. Division B and Division C events available.</p>
+        <div class="card-meta">
+          <span class="badge badge-blue">Houston, TX</span>
+          <span class="badge badge-green">Div. B &amp; C</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="event-card">
+      <div class="event-date-box">
+        <div class="month">Nov</div>
+        <div class="day">14</div>
+        <div class="year">2026</div>
+      </div>
+      <div class="event-details">
+        <h3>UT Austin Invitational</h3>
+        <p>University of Texas at Austin hosted invitational. One of the largest invitationals in Texas.</p>
+        <div class="card-meta">
+          <span class="badge badge-blue">Austin, TX</span>
+          <span class="badge badge-green">Div. B &amp; C</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-1"><a href="events.html">View all events and past accolades &rarr;</a></p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Tryout FAQ</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3 class="faq-question">When are tryouts?</h3>
+        <p class="faq-answer"><strong>September 3 and September 4, 2026</strong>, after school at Quail Valley Middle School.</p>
+      </div>
+      <div class="faq-item">
+        <h3 class="faq-question">Can I bring binders or cheat sheets?</h3>
+        <p class="faq-answer"><strong>No.</strong> Binders, cheat sheets, and outside reference materials are not allowed during tryout tests.</p>
+      </div>
+      <div class="faq-item">
+        <h3 class="faq-question">Can I share the tryout papers?</h3>
+        <p class="faq-answer"><strong>No.</strong> Do not share tryout papers with anyone. The same tests will be administered on both days.</p>
+      </div>
+      <div class="faq-item">
+        <h3 class="faq-question">How are tryout events determined?</h3>
+        <p class="faq-answer">Tryouts will be based on the <strong>interest selections you made on the interest form</strong>. You will be tested on the events you selected.</p>
+      </div>
+      <div class="faq-item">
+        <h3 class="faq-question">Do I need to attend both days?</h3>
+        <p class="faq-answer">You only need to attend <strong>one day</strong>. The same tryout tests are conducted on both September 3 and September 4.</p>
       </div>
     </div>
   </section>
@@ -107,25 +194,6 @@
   <div class="social-proof">
     <p>Proudly supporting <strong>Quail Valley Middle School</strong> — <strong>5th at TX State 2025</strong>, <strong>8th at TX State 2026</strong>, with <strong>3 gold medals</strong> across invitationals and state tournaments.</p>
   </div>
-
-  <section class="section">
-    <h2 class="section-title">What People Are Saying</h2>
-    <p class="section-subtitle">Feedback from students and parents</p>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <p class="quote">TORCH helped me go from knowing nothing about Science Olympiad to medaling at my first invitational. The volunteers really know their events and make learning fun.</p>
-        <p class="attribution">— Science Olympiad Student, 7th Grade</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="quote">My daughter's confidence in science has grown so much since joining. The high school mentors are patient, knowledgeable, and genuinely passionate about teaching.</p>
-        <p class="attribution">— Parent of TORCH Student</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="quote">The Code Busters sessions were my favorite — I went from struggling with basic ciphers to cracking Vigen&egrave;re in under a minute. Can't wait for next season!</p>
-        <p class="attribution">— Science Olympiad Student, 8th Grade</p>
-      </div>
-    </div>
-  </section>
 
   <footer class="footer">
     <div class="footer-container">
@@ -141,8 +209,7 @@
       </div>
       <div>
         <h4>Contact</h4>
-        <p>Email: stemscholars@example.com</p>
-        <p>Follow us on social media</p>
+        <p>Email: scienceolympiadqvms@gmail.com</p>
       </div>
     </div>
     <div class="footer-bottom">
