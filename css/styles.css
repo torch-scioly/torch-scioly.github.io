@@ -171,6 +171,14 @@ img {
   margin: 0 auto 2rem;
 }
 
+.hero .hero-mission {
+  font-size: 1rem;
+  opacity: 0.85;
+  max-width: 650px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.5;
+}
+
 .hero .cta-btn {
   display: inline-block;
   background: var(--accent);
