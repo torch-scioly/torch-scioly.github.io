@@ -648,45 +648,68 @@ img {
 .mt-2 { margin-top: 1rem; }
 .mb-2 { margin-bottom: 1rem; }
 
-/* ===== Floating Banner ===== */
+/* ===== Floating Banner (Scrolling Marquee) ===== */
 .floating-banner {
-  background: linear-gradient(135deg, var(--accent), #e67e22);
+  background: linear-gradient(90deg, #e74c3c, #c0392b, #e74c3c);
+  background-size: 200% 100%;
+  animation: banner-glow 3s ease infinite;
   color: #fff;
-  padding: 0.75rem 1rem;
-  text-align: center;
+  padding: 0.6rem 0;
   position: relative;
   z-index: 1001;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px rgba(231, 76, 60, 0.4);
+  overflow: hidden;
+}
+
+@keyframes banner-glow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .banner-content {
-  max-width: var(--max-width);
-  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
+  position: relative;
 }
 
-.banner-icon {
-  font-size: 1.2rem;
+.banner-scroll {
+  display: flex;
+  white-space: nowrap;
+  animation: scroll-left 20s linear infinite;
+  flex: 1;
+  overflow: hidden;
+}
+
+.banner-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding-right: 2rem;
+  flex-shrink: 0;
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .banner-close {
-  background: none;
+  background: rgba(0, 0, 0, 0.2);
   border: none;
   color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0 0.25rem;
-  margin-left: 0.75rem;
-  opacity: 0.8;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
   line-height: 1;
 }
 
 .banner-close:hover {
-  opacity: 1;
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .floating-banner.hidden {
@@ -694,36 +717,117 @@ img {
 }
 
 @media (max-width: 600px) {
-  .banner-content {
-    font-size: 0.85rem;
+  .banner-text {
+    font-size: 0.8rem;
   }
 }
 
-/* ===== FAQ ===== */
-.faq-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+/* ===== Compact Events List ===== */
+.section-compact {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 
-.faq-item {
+.events-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   background: var(--bg-white);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1.25rem 1.5rem;
-  border-left: 4px solid var(--primary-light);
+  overflow: hidden;
 }
 
-.faq-question {
-  font-size: 1rem;
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.event-row:last-child {
+  border-bottom: none;
+}
+
+.event-row.highlight-row {
+  background: rgba(243, 156, 18, 0.08);
+}
+
+.event-row-date {
+  font-weight: 700;
   color: var(--primary);
-  margin-bottom: 0.5rem;
+  min-width: 55px;
+  font-size: 0.9rem;
 }
 
-.faq-answer {
+.event-row-name {
+  flex: 1;
   font-size: 0.95rem;
+  color: var(--text);
+}
+
+@media (max-width: 500px) {
+  .event-row {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+  }
+}
+
+/* ===== Compact FAQ (Collapsible) ===== */
+.faq-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.faq-item-compact {
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+
+.faq-item-compact:last-child {
+  border-bottom: none;
+}
+
+.faq-item-compact summary {
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.95rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.faq-item-compact summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item-compact summary::after {
+  content: "+";
+  font-size: 1.2rem;
+  font-weight: 400;
   color: var(--text-light);
-  line-height: 1.6;
+  transition: transform 0.2s;
+}
+
+.faq-item-compact[open] summary::after {
+  content: "−";
+}
+
+.faq-item-compact p {
+  padding: 0 1.25rem 0.75rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  line-height: 1.5;
 }
 
 /* ===== Count-up Animation ===== */

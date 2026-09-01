@@ -9,8 +9,10 @@
 <body>
   <div class="floating-banner" id="tryout-banner">
     <div class="banner-content">
-      <span class="banner-icon">&#128227;</span>
-      <span><strong>Tryouts:</strong> Sept 3 &amp; Sept 4, 2026 — After School</span>
+      <div class="banner-scroll">
+        <span class="banner-text">&#128227; <strong>TRYOUTS: Sept 3 &amp; Sept 4, 2026 — After School at QVMS</strong> &nbsp;&bull;&nbsp; No binders or cheat sheets allowed &nbsp;&bull;&nbsp; Based on your interest form selections &nbsp;&bull;&nbsp; Same test both days — attend one! &nbsp;&bull;&nbsp;</span>
+        <span class="banner-text">&#128227; <strong>TRYOUTS: Sept 3 &amp; Sept 4, 2026 — After School at QVMS</strong> &nbsp;&bull;&nbsp; No binders or cheat sheets allowed &nbsp;&bull;&nbsp; Based on your interest form selections &nbsp;&bull;&nbsp; Same test both days — attend one! &nbsp;&bull;&nbsp;</span>
+      </div>
       <button class="banner-close" id="banner-close" aria-label="Close banner">&times;</button>
     </div>
   </div>
@@ -47,147 +49,73 @@
         <div class="stat-label">Volunteers</div>
       </div>
       <div class="stat-item">
-        <div class="stat-number">5th</div>
-        <div class="stat-label">TX State 2025</div>
+        <div class="stat-number" id="gc-total">—</div>
+        <div class="stat-label">Unique Visitors</div>
       </div>
       <div class="stat-item">
-        <div class="stat-number">8th</div>
-        <div class="stat-label">TX State 2026</div>
+        <div class="stat-number" id="gc-monthly">—</div>
+        <div class="stat-label">This Month</div>
       </div>
     </div>
   </div>
 
   <section class="section">
     <h2 class="section-title">Our Mission</h2>
-    <p class="section-subtitle">Building the bridge between curiosity and achievement</p>
     <div class="mission">
       <p>TORCH is a student-led volunteer program dedicated to preparing Quail Valley Middle School students for Science Olympiad invitationals, regionals, and state competitions. Our high school volunteers bring firsthand competition experience, passion for STEM, and a commitment to making competitive science accessible to every student who wants to learn.</p>
     </div>
   </section>
 
-  <section class="section">
-    <h2 class="section-title">What We Offer</h2>
-    <p class="section-subtitle">15 Science Olympiad events taught by 8 dedicated volunteers</p>
-    <div class="card-grid">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-icon scioly">&#127942;</div>
-          <h3>Life &amp; Earth Sciences</h3>
-        </div>
-        <p>Anatomy &amp; Physiology, Forensics, Genetics, Water Quality, Food Science, and Rocks &amp; Minerals. Hands-on practice, study guides, and competition simulations.</p>
-        <div class="card-meta">
-          <span class="badge badge-blue">6 Events</span>
-          <span class="badge badge-blue">Div. B &amp; C</span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-icon scioly">&#128200;</div>
-          <h3>Physical Sciences &amp; Skills</h3>
-        </div>
-        <p>Chemistry, Astronomy, Experimental Design, Code Busters, WGYN, Science Words, and CAD Design. Strategy sessions, timed drills, and lab practice.</p>
-        <div class="card-meta">
-          <span class="badge badge-blue">7 Events</span>
-          <span class="badge badge-blue">Div. B &amp; C</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
+  <section class="section section-compact">
     <h2 class="section-title">Upcoming Events</h2>
-    <p class="section-subtitle">Competitions and events on the horizon</p>
-
-    <div class="event-card">
-      <div class="event-date-box" style="background:var(--accent);">
-        <div class="month">Sep</div>
-        <div class="day">3-4</div>
-        <div class="year">2026</div>
+    <div class="events-compact">
+      <div class="event-row highlight-row">
+        <span class="event-row-date">Sep 3-4</span>
+        <span class="event-row-name"><strong>TORCH Tryouts</strong></span>
+        <span class="badge badge-orange">After School</span>
       </div>
-      <div class="event-details">
-        <h3>TORCH Tryouts</h3>
-        <p>Science Olympiad team tryouts at Quail Valley Middle School. Both days after school. Tryouts based on your interest form event selections.</p>
-        <div class="card-meta">
-          <span class="badge badge-orange">After School</span>
-          <span class="badge badge-red">No Binders Allowed</span>
-        </div>
+      <div class="event-row">
+        <span class="event-row-date">Oct 17</span>
+        <span class="event-row-name">LASSO Satellite Invitational</span>
+        <span class="badge badge-blue">Austin, TX</span>
       </div>
-    </div>
-
-    <div class="event-card">
-      <div class="event-date-box">
-        <div class="month">Oct</div>
-        <div class="day">17</div>
-        <div class="year">2026</div>
+      <div class="event-row">
+        <span class="event-row-date">Nov 7</span>
+        <span class="event-row-name">Cypress Falls Invitational</span>
+        <span class="badge badge-blue">Houston, TX</span>
       </div>
-      <div class="event-details">
-        <h3>LASSO Satellite Invitational</h3>
-        <p>Satellite invitational hosted by LASA Science Olympiad in Austin, TX. Open to Division B (middle school) and Division C (high school) teams.</p>
-        <div class="card-meta">
-          <span class="badge badge-blue">Austin, TX</span>
-          <span class="badge badge-green">Div. B &amp; C</span>
-        </div>
+      <div class="event-row">
+        <span class="event-row-date">Nov 14</span>
+        <span class="event-row-name">UT Austin Invitational</span>
+        <span class="badge badge-blue">Austin, TX</span>
       </div>
     </div>
-
-    <div class="event-card">
-      <div class="event-date-box">
-        <div class="month">Nov</div>
-        <div class="day">7</div>
-        <div class="year">2026</div>
-      </div>
-      <div class="event-details">
-        <h3>Cypress Falls Invitational</h3>
-        <p>Invitational tournament in Houston, TX. Division B and Division C events available.</p>
-        <div class="card-meta">
-          <span class="badge badge-blue">Houston, TX</span>
-          <span class="badge badge-green">Div. B &amp; C</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="event-card">
-      <div class="event-date-box">
-        <div class="month">Nov</div>
-        <div class="day">14</div>
-        <div class="year">2026</div>
-      </div>
-      <div class="event-details">
-        <h3>UT Austin Invitational</h3>
-        <p>University of Texas at Austin hosted invitational. One of the largest invitationals in Texas.</p>
-        <div class="card-meta">
-          <span class="badge badge-blue">Austin, TX</span>
-          <span class="badge badge-green">Div. B &amp; C</span>
-        </div>
-      </div>
-    </div>
-
     <p class="mt-1"><a href="events.html">View all events and past accolades &rarr;</a></p>
   </section>
 
-  <section class="section">
+  <section class="section section-compact">
     <h2 class="section-title">Tryout FAQ</h2>
-    <div class="faq-list">
-      <div class="faq-item">
-        <h3 class="faq-question">When are tryouts?</h3>
-        <p class="faq-answer"><strong>September 3 and September 4, 2026</strong>, after school at Quail Valley Middle School.</p>
-      </div>
-      <div class="faq-item">
-        <h3 class="faq-question">Can I bring binders or cheat sheets?</h3>
-        <p class="faq-answer"><strong>No.</strong> Binders, cheat sheets, and outside reference materials are not allowed during tryout tests.</p>
-      </div>
-      <div class="faq-item">
-        <h3 class="faq-question">Can I share the tryout papers?</h3>
-        <p class="faq-answer"><strong>No.</strong> Do not share tryout papers with anyone. The same tests will be administered on both days.</p>
-      </div>
-      <div class="faq-item">
-        <h3 class="faq-question">How are tryout events determined?</h3>
-        <p class="faq-answer">Tryouts will be based on the <strong>interest selections you made on the interest form</strong>. You will be tested on the events you selected.</p>
-      </div>
-      <div class="faq-item">
-        <h3 class="faq-question">Do I need to attend both days?</h3>
-        <p class="faq-answer">You only need to attend <strong>one day</strong>. The same tryout tests are conducted on both September 3 and September 4.</p>
-      </div>
+    <div class="faq-compact">
+      <details class="faq-item-compact">
+        <summary>When are tryouts?</summary>
+        <p><strong>Sept 3 &amp; Sept 4, 2026</strong>, after school at Quail Valley Middle School.</p>
+      </details>
+      <details class="faq-item-compact">
+        <summary>Can I bring binders or cheat sheets?</summary>
+        <p><strong>No.</strong> No binders, cheat sheets, or outside reference materials allowed.</p>
+      </details>
+      <details class="faq-item-compact">
+        <summary>Can I share the tryout papers?</summary>
+        <p><strong>No.</strong> Do not share tryout papers — the same tests are used both days.</p>
+      </details>
+      <details class="faq-item-compact">
+        <summary>How are tryout events determined?</summary>
+        <p>Based on the <strong>interest selections from your interest form</strong>.</p>
+      </details>
+      <details class="faq-item-compact">
+        <summary>Do I need to attend both days?</summary>
+        <p><strong>No</strong> — attend one day. Same tests both days.</p>
+      </details>
     </div>
   </section>
 

@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Floating banner dismiss
   initBanner();
 
+  // Fetch and display GoatCounter stats
+  fetchVisitorStats();
+
   // Count-up animation for stats
   animateStats();
 });
@@ -28,7 +31,6 @@ function initBanner() {
   var closeBtn = document.getElementById('banner-close');
   if (!banner || !closeBtn) return;
 
-  // Check if user already dismissed it this session
   if (sessionStorage.getItem('torch_banner_dismissed')) {
     banner.classList.add('hidden');
     return;
@@ -38,6 +40,51 @@ function initBanner() {
     banner.classList.add('hidden');
     sessionStorage.setItem('torch_banner_dismissed', 'true');
   });
+}
+
+// Fetch GoatCounter visitor stats
+function fetchVisitorStats() {
+  var totalEl = document.getElementById('gc-total');
+  var monthlyEl = document.getElementById('gc-monthly');
+  if (!totalEl && !monthlyEl) return;
+
+  // GoatCounter public API - fetch total unique visitors
+  var gcSite = 'scienceolympiadqvms';
+
+  // Get current month date range
+  var now = new Date();
+  var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+  var today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+  // Fetch total visitors (all time)
+  if (totalEl) {
+    fetch('https://' + gcSite + '.goatcounter.com/counter/' + encodeURIComponent('/') + '.json')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var count = parseInt(data.count.replace(/,/g, ''), 10);
+        if (!isNaN(count)) {
+          animateNumber(totalEl, 0, count, 1200);
+        }
+      })
+      .catch(function () {
+        totalEl.textContent = '—';
+      });
+  }
+
+  // Fetch monthly visitors
+  if (monthlyEl) {
+    fetch('https://' + gcSite + '.goatcounter.com/counter/' + encodeURIComponent('/') + '.json?period=month')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var count = parseInt(data.count.replace(/,/g, ''), 10);
+        if (!isNaN(count)) {
+          animateNumber(monthlyEl, 0, count, 1200);
+        }
+      })
+      .catch(function () {
+        monthlyEl.textContent = '—';
+      });
+  }
 }
 
 // Animate a number from start to end
