@@ -42,48 +42,51 @@ function initBanner() {
   });
 }
 
-// Fetch GoatCounter visitor stats
+// Fetch GoatCounter visitor stats via JSONP to avoid CORS issues
 function fetchVisitorStats() {
   var totalEl = document.getElementById('gc-total');
   var monthlyEl = document.getElementById('gc-monthly');
   if (!totalEl && !monthlyEl) return;
 
-  // GoatCounter public API - fetch total unique visitors
   var gcSite = 'scienceolympiadqvms';
+  var base = 'https://' + gcSite + '.goatcounter.com/counter/';
+  var path = encodeURIComponent('/') + '.json';
 
-  // Get current month date range
-  var now = new Date();
-  var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
-  var today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  function loadViaScript(url, callback) {
+    var cbName = '_gc_cb_' + Math.random().toString(36).substr(2, 8);
+    window[cbName] = function (data) {
+      callback(data);
+      delete window[cbName];
+      document.head.removeChild(script);
+    };
+    // GoatCounter .json endpoint supports JSONP via ?callback=
+    var script = document.createElement('script');
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    script.onerror = function () {
+      delete window[cbName];
+      document.head.removeChild(script);
+    };
+    document.head.appendChild(script);
+  }
 
   // Fetch total visitors (all time)
   if (totalEl) {
-    fetch('https://' + gcSite + '.goatcounter.com/counter/' + encodeURIComponent('/') + '.json')
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var count = parseInt(data.count.replace(/,/g, ''), 10);
-        if (!isNaN(count)) {
-          animateNumber(totalEl, 0, count, 1200);
-        }
-      })
-      .catch(function () {
-        totalEl.textContent = '—';
-      });
+    loadViaScript(base + path, function (data) {
+      var count = parseInt(String(data.count).replace(/,/g, ''), 10);
+      if (!isNaN(count)) {
+        animateNumber(totalEl, 0, count, 1200);
+      }
+    });
   }
 
   // Fetch monthly visitors
   if (monthlyEl) {
-    fetch('https://' + gcSite + '.goatcounter.com/counter/' + encodeURIComponent('/') + '.json?period=month')
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var count = parseInt(data.count.replace(/,/g, ''), 10);
-        if (!isNaN(count)) {
-          animateNumber(monthlyEl, 0, count, 1200);
-        }
-      })
-      .catch(function () {
-        monthlyEl.textContent = '—';
-      });
+    loadViaScript(base + path + '?period=month', function (data) {
+      var count = parseInt(String(data.count).replace(/,/g, ''), 10);
+      if (!isNaN(count)) {
+        animateNumber(monthlyEl, 0, count, 1200);
+      }
+    });
   }
 }
 

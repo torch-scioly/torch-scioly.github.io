@@ -861,3 +861,41 @@ img {
 .social-proof strong {
   color: var(--accent);
 }
+
+/* ===== Results Page ===== */
+.results-list {
+  max-width: 700px;
+  margin: 0 auto;
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 2rem;
+}
+
+.results-names {
+  columns: 2;
+  column-gap: 2rem;
+  list-style-position: inside;
+  padding: 0;
+}
+
+.results-names li {
+  padding: 0.4rem 0;
+  font-size: 0.95rem;
+  color: var(--text);
+  break-inside: avoid;
+}
+
+.results-names li::marker {
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .results-names {
+    columns: 1;
+  }
+  .results-list {
+    padding: 1rem 1.25rem;
+  }
+}
