@@ -42,7 +42,7 @@ function initBanner() {
   });
 }
 
-// Fetch GoatCounter visitor stats via JSONP to avoid CORS issues
+// Fetch GoatCounter visitor stats
 function fetchVisitorStats() {
   var totalEl = document.getElementById('gc-total');
   var monthlyEl = document.getElementById('gc-monthly');
@@ -52,41 +52,43 @@ function fetchVisitorStats() {
   var base = 'https://' + gcSite + '.goatcounter.com/counter/';
   var path = encodeURIComponent('/') + '.json';
 
-  function loadViaScript(url, callback) {
-    var cbName = '_gc_cb_' + Math.random().toString(36).substr(2, 8);
-    window[cbName] = function (data) {
-      callback(data);
-      delete window[cbName];
-      document.head.removeChild(script);
-    };
-    // GoatCounter .json endpoint supports JSONP via ?callback=
-    var script = document.createElement('script');
-    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
-    script.onerror = function () {
-      delete window[cbName];
-      document.head.removeChild(script);
-    };
-    document.head.appendChild(script);
-  }
-
   // Fetch total visitors (all time)
   if (totalEl) {
-    loadViaScript(base + path, function (data) {
-      var count = parseInt(String(data.count).replace(/,/g, ''), 10);
-      if (!isNaN(count)) {
-        animateNumber(totalEl, 0, count, 1200);
-      }
-    });
+    fetch(base + path)
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var count = parseInt(String(data.count).replace(/,/g, ''), 10);
+        if (!isNaN(count)) {
+          animateNumber(totalEl, 0, count, 1200);
+        }
+      })
+      .catch(function () {
+        // API not enabled — hide the stat instead of showing a dash
+        var statItem = totalEl.closest('.stat-item');
+        if (statItem) statItem.style.display = 'none';
+      });
   }
 
   // Fetch monthly visitors
   if (monthlyEl) {
-    loadViaScript(base + path + '?period=month', function (data) {
-      var count = parseInt(String(data.count).replace(/,/g, ''), 10);
-      if (!isNaN(count)) {
-        animateNumber(monthlyEl, 0, count, 1200);
-      }
-    });
+    fetch(base + path + '?period=month')
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var count = parseInt(String(data.count).replace(/,/g, ''), 10);
+        if (!isNaN(count)) {
+          animateNumber(monthlyEl, 0, count, 1200);
+        }
+      })
+      .catch(function () {
+        var statItem = monthlyEl.closest('.stat-item');
+        if (statItem) statItem.style.display = 'none';
+      });
   }
 }
 
