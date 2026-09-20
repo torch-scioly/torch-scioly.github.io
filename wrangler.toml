@@ -1,0 +1,9 @@
+name = "torch-signups"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "torch-signups"
+database_id = "30664827-7b33-4a3a-a814-c1487bbc699f"
