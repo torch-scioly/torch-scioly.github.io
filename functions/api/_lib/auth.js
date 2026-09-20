@@ -1,6 +1,17 @@
 export const SESSION_COOKIE_NAME = 'torch_admin_session';
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
+export function timingSafeEqual(a, b) {
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  if (aBytes.length !== bBytes.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBytes.length; i++) {
+    result |= aBytes[i] ^ bBytes[i];
+  }
+  return result === 0;
+}
+
 async function hmac(secret, message) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -41,5 +52,5 @@ export async function isValidAdminSession(request, env) {
   if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
 
   const expectedSignature = await hmac(env.SESSION_SECRET, expiresAtStr);
-  return signature === expectedSignature;
+  return timingSafeEqual(signature, expectedSignature);
 }
