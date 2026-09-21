@@ -125,11 +125,17 @@ function openClassDetail(classId) {
   if (!modal || !body) return;
 
   fetch('/api/classes/' + classId)
-    .then(function (res) { return res.json(); })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to load class');
+      return res.json();
+    })
     .then(function (cls) {
       body.innerHTML = renderClassDetailHtml(cls);
       wireClassDetailEvents(cls);
       modal.hidden = false;
+    })
+    .catch(function (err) {
+      alert(err.message);
     });
 }
 
@@ -185,9 +191,13 @@ function wireClassDetailEvents(cls) {
       var type = btn.getAttribute('data-type');
       var id = btn.getAttribute('data-id');
       fetch('/api/classes/' + cls.id + '/' + type + '/' + id, { method: 'DELETE' })
-        .then(function () {
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to remove signup');
           openClassDetail(cls.id);
           loadClasses();
+        })
+        .catch(function (err) {
+          alert(err.message);
         });
     });
   });
@@ -205,7 +215,14 @@ function wireClassDetailEvents(cls) {
           email: formData.get('email'),
           roleNote: formData.get('roleNote'),
         }),
-      }).then(function () { openClassDetail(cls.id); });
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to add volunteer');
+          openClassDetail(cls.id);
+        })
+        .catch(function (err) {
+          alert(err.message);
+        });
     });
   }
 
@@ -223,7 +240,14 @@ function wireClassDetailEvents(cls) {
           parentName: formData.get('parentName'),
           parentEmail: formData.get('parentEmail'),
         }),
-      }).then(function () { openClassDetail(cls.id); });
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to add student');
+          openClassDetail(cls.id);
+        })
+        .catch(function (err) {
+          alert(err.message);
+        });
     });
   }
 
@@ -266,10 +290,15 @@ function renderEditClassSection(cls) {
         zoom_link: formData.get('zoom_link') || null,
         zoom_notes: formData.get('zoom_notes') || null,
       }),
-    }).then(function () {
-      openClassDetail(cls.id);
-      loadClasses();
-    });
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Failed to update class');
+        openClassDetail(cls.id);
+        loadClasses();
+      })
+      .catch(function (err) {
+        alert(err.message);
+      });
   });
 
   var cancelBtn = document.getElementById('cancel-class-btn');
@@ -277,9 +306,13 @@ function renderEditClassSection(cls) {
     cancelBtn.addEventListener('click', function () {
       if (!confirm('Cancel this class?')) return;
       fetch('/api/classes/' + cls.id, { method: 'DELETE' })
-        .then(function () {
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to cancel class');
           openClassDetail(cls.id);
           loadClasses();
+        })
+        .catch(function (err) {
+          alert(err.message);
         });
     });
   }

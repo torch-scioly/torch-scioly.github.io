@@ -237,9 +237,14 @@ function makeClassDetail(overrides) {
 
 // Routes a mocked fetch by URL/method so multi-step flows (e.g. remove ->
 // re-fetch detail -> re-fetch list) all resolve sensibly within one test.
-function makeFetchRouter(classDetail) {
+// `shouldFail(url, method)`, if given, forces a matching call to resolve
+// with `ok: false` instead, to exercise the error-handling path.
+function makeFetchRouter(classDetail, shouldFail) {
   return vi.fn(function (url, opts) {
     var method = (opts && opts.method) || 'GET';
+    if (shouldFail && shouldFail(url, method)) {
+      return Promise.resolve({ ok: false, json: function () { return Promise.resolve({ error: 'nope' }); } });
+    }
     if (url === '/api/classes' && method === 'GET') {
       return Promise.resolve({ ok: true, json: function () { return Promise.resolve([]); } });
     }
@@ -487,5 +492,116 @@ describe('js/classes.js class detail modal', () => {
     document.getElementById('close-detail-modal').dispatchEvent(new window.Event('click', { bubbles: true }));
 
     expect(modal.hidden).toBe(true);
+  });
+});
+
+describe('js/classes.js class detail modal error handling', () => {
+  it('openClassDetail alerts and leaves the modal hidden when the fetch fails', async () => {
+    var fetchImpl = makeFetchRouter(makeClassDetail(), function (url, method) {
+      return url === '/api/classes/42' && method === 'GET';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to load class');
+    expect(document.getElementById('class-detail-modal').hidden).toBe(true);
+  });
+
+  it('remove-btn click alerts when the DELETE fails', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail, function (url, method) {
+      return method === 'DELETE' && url === '/api/classes/42/volunteers/1';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    window.alert.mockClear();
+
+    document
+      .querySelector('.remove-btn[data-type="volunteers"][data-id="1"]')
+      .dispatchEvent(new window.Event('click', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to remove signup');
+  });
+
+  it('add-volunteer-form submit alerts when the POST fails (e.g. backend validation 400)', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail, function (url, method) {
+      return method === 'POST' && url === '/api/classes/42/volunteers';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    window.alert.mockClear();
+
+    var form = document.getElementById('add-volunteer-form');
+    form.querySelector('[name="name"]').value = 'Charlie';
+    form.querySelector('[name="email"]').value = 'charlie@example.com';
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to add volunteer');
+  });
+
+  it('add-student-form submit alerts when the POST fails (e.g. missing parentEmail, which the backend 400s on)', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail, function (url, method) {
+      return method === 'POST' && url === '/api/classes/42/students';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    window.alert.mockClear();
+
+    var form = document.getElementById('add-student-form');
+    form.querySelector('[name="studentName"]').value = 'Dana';
+    form.querySelector('[name="parentName"]').value = 'Erin';
+    form.querySelector('[name="parentEmail"]').value = '';
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to add student');
+  });
+
+  it('edit-class-form submit alerts when the PUT fails', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail, function (url, method) {
+      return method === 'PUT' && url === '/api/classes/42';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    window.alert.mockClear();
+
+    document
+      .getElementById('edit-class-form')
+      .dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to update class');
+  });
+
+  it('cancel-class-btn click alerts when the DELETE fails', async () => {
+    var detail = makeClassDetail({ status: 'scheduled' });
+    var fetchImpl = makeFetchRouter(detail, function (url, method) {
+      return method === 'DELETE' && url === '/api/classes/42';
+    });
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    window.alert.mockClear();
+
+    document.getElementById('cancel-class-btn').dispatchEvent(new window.Event('click', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to cancel class');
   });
 });
