@@ -40,12 +40,13 @@ const ADMIN_HTML_FIXTURE = `
  * that window, the same mechanism (global-object-as-context) a classic
  * script uses.
  */
-function setupAdminPage({ fetchImpl } = {}) {
+function setupAdminPage({ fetchImpl, confirmImpl } = {}) {
   const window = new Window();
   const document = window.document;
   document.body.innerHTML = ADMIN_HTML_FIXTURE;
 
   window.fetch = fetchImpl || vi.fn();
+  window.confirm = confirmImpl || vi.fn(() => true);
 
   const context = vm.createContext(window);
   vm.runInContext(ADMIN_JS_SOURCE, context, { filename: ADMIN_JS_PATH });
@@ -94,50 +95,266 @@ describe('js/admin.js login flow', () => {
     expect(dashboard.hidden).toBe(true);
   });
 
-  it('hides the login form and reveals the dashboard on a successful login, then throws calling the not-yet-defined loadAuditLog (expected until Task 15)', async () => {
-    // Mirrors the real response observed from a live `wrangler pages dev .`
-    // server for the correct password: HTTP 200 {"ok":true} with a
-    // Set-Cookie session header.
-    const fetchImpl = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ ok: true }),
-    });
+  it('hides the login form, reveals the dashboard, and loads the audit log on a successful login (Task 15: loadAuditLog now defined)', async () => {
+    // Mirrors the real responses observed from a live `wrangler pages dev .`
+    // server: HTTP 200 {"ok":true} with a Set-Cookie session header for
+    // /api/admin/login, followed by the JSON array /api/admin/audit-log
+    // returns once loadAuditLog() fires.
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ ok: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve([
+            {
+              id: 7,
+              class_id: 2,
+              entity_type: 'class',
+              action: 'created',
+              snapshot: { id: 2, title: 'Verify Task15 Class' },
+              created_at: '2026-09-21 00:51:22',
+            },
+          ]),
+      });
     const { window, document } = setupAdminPage({ fetchImpl });
 
-    const rejections = [];
-    const onUnhandledRejection = (reason) => rejections.push(reason);
-    process.on('unhandledRejection', onUnhandledRejection);
+    submitLoginForm(window, document, 'local-test-password-123');
+    await flushMicrotasks();
 
-    try {
-      submitLoginForm(window, document, 'local-test-password-123');
-      await flushMicrotasks();
-    } finally {
-      process.off('unhandledRejection', onUnhandledRejection);
-    }
-
-    const [url, opts] = fetchImpl.mock.calls[0];
-    expect(url).toBe('/api/admin/login');
-    expect(opts.credentials).toBe('same-origin');
-    expect(JSON.parse(opts.body)).toEqual({ password: 'local-test-password-123' });
+    const [loginUrl, loginOpts] = fetchImpl.mock.calls[0];
+    expect(loginUrl).toBe('/api/admin/login');
+    expect(loginOpts.credentials).toBe('same-origin');
+    expect(JSON.parse(loginOpts.body)).toEqual({ password: 'local-test-password-123' });
 
     const loginError = document.getElementById('login-error');
     const loginForm = document.getElementById('admin-login-form');
     const dashboard = document.getElementById('admin-dashboard');
-    // DOM transitions run (in source order) before the loadAuditLog() call
-    // throws, so they take effect even though the call after them fails.
     expect(loginError.hidden).toBe(true);
     expect(loginForm.hidden).toBe(true);
     expect(dashboard.hidden).toBe(false);
 
-    // The brief documents that loadAuditLog (Task 15) is undefined at this
-    // checkpoint and that logging in successfully throws a console error.
-    // We assert that real, observed failure here instead of predicting it.
-    // rejections[0] is a ReferenceError from the vm context's own realm
-    // (a separate global from this test file's), so it isn't `instanceof`
-    // this file's Error constructor — we assert on its name/message instead.
-    expect(rejections.length).toBe(1);
-    expect(rejections[0].name).toBe('ReferenceError');
-    expect(rejections[0].message).toMatch(/loadAuditLog is not defined/);
+    // loadAuditLog() fired a second real fetch and rendered the result.
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const [auditUrl, auditOpts] = fetchImpl.mock.calls[1];
+    expect(auditUrl).toBe('/api/admin/audit-log');
+    expect(auditOpts.credentials).toBe('same-origin');
+
+    const rows = document.querySelectorAll('#audit-log-body tr');
+    expect(rows.length).toBe(1);
+    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+  });
+});
+
+// Sample entries mirroring the real shape observed from a live
+// `wrangler pages dev .` server's GET /api/admin/audit-log (see the Task 15
+// verification report): { id, class_id, entity_type, action, snapshot,
+// created_at }, where entity_type is 'class' | 'volunteer_signup' |
+// 'student_signup' and action is 'created' | 'edited' | 'removed'.
+const CLASS_CREATED_ENTRY = {
+  id: 7,
+  class_id: 2,
+  entity_type: 'class',
+  action: 'created',
+  snapshot: { id: 2, title: 'Verify Task15 Class', status: 'upcoming' },
+  created_at: '2026-09-21 00:51:22',
+};
+const VOLUNTEER_CREATED_ENTRY = {
+  id: 8,
+  class_id: 2,
+  entity_type: 'volunteer_signup',
+  action: 'created',
+  snapshot: { id: 41, class_id: 2, name: 'Vera Volunteer', email: 'vera@example.com' },
+  created_at: '2026-09-21 00:51:22',
+};
+const STUDENT_CREATED_ENTRY = {
+  id: 9,
+  class_id: 2,
+  entity_type: 'student_signup',
+  action: 'created',
+  snapshot: { id: 52, class_id: 2, student_name: 'Sammy Student', parent_name: 'Pat Parent' },
+  created_at: '2026-09-21 00:51:22',
+};
+const VOLUNTEER_REMOVED_ENTRY = {
+  id: 2,
+  class_id: 1,
+  entity_type: 'volunteer_signup',
+  action: 'removed',
+  snapshot: { id: 1, class_id: 1, name: 'Alice Volunteer', email: 'alice@example.com' },
+  created_at: '2026-09-21 00:32:01',
+};
+
+describe('js/admin.js auditEntryDeleteEndpoint', () => {
+  it('builds the classes hard-delete endpoint from class_id for a class entry', () => {
+    const { window } = setupAdminPage();
+    expect(window.auditEntryDeleteEndpoint(CLASS_CREATED_ENTRY)).toBe('/api/admin/classes/2');
+  });
+
+  it('builds the volunteer-signups hard-delete endpoint from snapshot.id for a volunteer_signup entry', () => {
+    const { window } = setupAdminPage();
+    expect(window.auditEntryDeleteEndpoint(VOLUNTEER_CREATED_ENTRY)).toBe('/api/admin/volunteer-signups/41');
+  });
+
+  it('builds the student-signups hard-delete endpoint from snapshot.id for a student_signup entry', () => {
+    const { window } = setupAdminPage();
+    expect(window.auditEntryDeleteEndpoint(STUDENT_CREATED_ENTRY)).toBe('/api/admin/student-signups/52');
+  });
+
+  it('returns null (no delete endpoint) for an entry whose action is already "removed"', () => {
+    const { window } = setupAdminPage();
+    expect(window.auditEntryDeleteEndpoint(VOLUNTEER_REMOVED_ENTRY)).toBe(null);
+  });
+});
+
+describe('js/admin.js escapeHtmlAdmin', () => {
+  it('escapes HTML-significant characters instead of letting them parse as markup', () => {
+    const { window } = setupAdminPage();
+    expect(window.escapeHtmlAdmin('<script>alert(1)</script>')).toBe(
+      '&lt;script&gt;alert(1)&lt;/script&gt;'
+    );
+  });
+
+  it('returns an empty string for null/undefined and stringifies other values', () => {
+    const { window } = setupAdminPage();
+    expect(window.escapeHtmlAdmin(null)).toBe('');
+    expect(window.escapeHtmlAdmin(undefined)).toBe('');
+    expect(window.escapeHtmlAdmin(2)).toBe('2');
+  });
+});
+
+describe('js/admin.js renderAuditLog', () => {
+  it('renders one row per entry with a Hard delete button for non-removed entries', () => {
+    const { window, document } = setupAdminPage();
+    window.renderAuditLog([CLASS_CREATED_ENTRY, VOLUNTEER_CREATED_ENTRY, STUDENT_CREATED_ENTRY]);
+
+    const rows = document.querySelectorAll('#audit-log-body tr');
+    expect(rows.length).toBe(3);
+
+    const classRow = rows[0];
+    expect(classRow.children[0].textContent).toBe('2026-09-21 00:51:22');
+    expect(classRow.children[1].textContent).toBe('2');
+    expect(classRow.children[2].textContent).toBe('class');
+    expect(classRow.children[3].textContent).toBe('created');
+    const classBtn = classRow.querySelector('.remove-btn');
+    expect(classBtn).not.toBeNull();
+    expect(classBtn.getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+    expect(classBtn.textContent).toBe('Hard delete');
+
+    const volunteerBtn = rows[1].querySelector('.remove-btn');
+    expect(volunteerBtn.getAttribute('data-endpoint')).toBe('/api/admin/volunteer-signups/41');
+
+    const studentBtn = rows[2].querySelector('.remove-btn');
+    expect(studentBtn.getAttribute('data-endpoint')).toBe('/api/admin/student-signups/52');
+  });
+
+  it('omits the Hard delete button for entries whose action is "removed"', () => {
+    const { window, document } = setupAdminPage();
+    window.renderAuditLog([VOLUNTEER_REMOVED_ENTRY]);
+
+    const row = document.querySelector('#audit-log-body tr');
+    expect(row.querySelector('.remove-btn')).toBeNull();
+    // The trailing action/button cell is still present but empty.
+    expect(row.children[3].textContent).toBe('removed');
+    expect(row.children[5].textContent).toBe('');
+  });
+
+  it('escapes a <script>-bearing snapshot value instead of injecting a live script element', () => {
+    const { window, document } = setupAdminPage();
+    const maliciousEntry = {
+      ...CLASS_CREATED_ENTRY,
+      snapshot: { title: '<script>window.__xss = true;</script>' },
+    };
+    window.renderAuditLog([maliciousEntry]);
+
+    const tbody = document.getElementById('audit-log-body');
+    // No real <script> element was parsed into the DOM...
+    expect(tbody.querySelector('script')).toBeNull();
+    expect(window.__xss).toBeUndefined();
+    // ...but the escaped text is still visible in the details cell.
+    const detailsCell = tbody.querySelector('tr').children[4];
+    expect(detailsCell.textContent).toContain('<script>window.__xss = true;</script>');
+    expect(detailsCell.innerHTML).toContain('&lt;script&gt;');
+  });
+
+  it('does nothing (no throw) when #audit-log-body is missing from the page', () => {
+    const { window, document } = setupAdminPage();
+    document.getElementById('audit-log-body').remove();
+    expect(() => window.renderAuditLog([CLASS_CREATED_ENTRY])).not.toThrow();
+  });
+});
+
+describe('js/admin.js loadAuditLog', () => {
+  it('GETs /api/admin/audit-log with same-origin credentials and renders the returned entries', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([CLASS_CREATED_ENTRY]),
+    });
+    const { window, document } = setupAdminPage({ fetchImpl });
+
+    window.loadAuditLog();
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, opts] = fetchImpl.mock.calls[0];
+    expect(url).toBe('/api/admin/audit-log');
+    expect(opts.credentials).toBe('same-origin');
+
+    const rows = document.querySelectorAll('#audit-log-body tr');
+    expect(rows.length).toBe(1);
+    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+  });
+});
+
+describe('js/admin.js Hard delete button click handling', () => {
+  it('does NOT call DELETE when confirm() is declined', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([CLASS_CREATED_ENTRY]),
+    });
+    const confirmImpl = vi.fn(() => false);
+    const { window, document } = setupAdminPage({ fetchImpl, confirmImpl });
+
+    window.renderAuditLog([CLASS_CREATED_ENTRY]);
+    document.querySelector('.remove-btn').dispatchEvent(new window.Event('click', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(confirmImpl).toHaveBeenCalledWith('Permanently delete this?');
+    // renderAuditLog itself doesn't fetch, so confirm-declined means zero fetches total.
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('DELETEs the entry endpoint and reloads the audit log when confirm() is accepted', async () => {
+    const deleteResponse = { ok: true, status: 204, json: () => Promise.resolve(null) };
+    const reloadedListResponse = { ok: true, json: () => Promise.resolve([]) };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(deleteResponse)
+      .mockResolvedValueOnce(reloadedListResponse);
+    const confirmImpl = vi.fn(() => true);
+    const { window, document } = setupAdminPage({ fetchImpl, confirmImpl });
+
+    window.renderAuditLog([CLASS_CREATED_ENTRY]);
+    document.querySelector('.remove-btn').dispatchEvent(new window.Event('click', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(confirmImpl).toHaveBeenCalledWith('Permanently delete this?');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    const [deleteUrl, deleteOpts] = fetchImpl.mock.calls[0];
+    expect(deleteUrl).toBe('/api/admin/classes/2');
+    expect(deleteOpts.method).toBe('DELETE');
+    expect(deleteOpts.credentials).toBe('same-origin');
+
+    // The click handler's .then() calls loadAuditLog(), which re-fetches the list.
+    const [reloadUrl] = fetchImpl.mock.calls[1];
+    expect(reloadUrl).toBe('/api/admin/audit-log');
+
+    // The reload rendered an empty table (the mocked reload response is []).
+    expect(document.querySelectorAll('#audit-log-body tr').length).toBe(0);
   });
 });
