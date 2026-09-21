@@ -47,6 +47,7 @@ function setupAdminPage({ fetchImpl, confirmImpl } = {}) {
 
   window.fetch = fetchImpl || vi.fn();
   window.confirm = confirmImpl || vi.fn(() => true);
+  window.alert = vi.fn();
 
   const context = vm.createContext(window);
   vm.runInContext(ADMIN_JS_SOURCE, context, { filename: ADMIN_JS_PATH });
@@ -148,6 +149,17 @@ describe('js/admin.js login flow', () => {
     const rows = document.querySelectorAll('#audit-log-body tr');
     expect(rows.length).toBe(1);
     expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+  });
+
+  it('alerts on a network-level login failure (fetch rejects) instead of leaving the form inert', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const { window, document } = setupAdminPage({ fetchImpl });
+    window.alert = vi.fn();
+
+    submitLoginForm(window, document, 'whatever');
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to log in — check your connection');
   });
 });
 
@@ -308,6 +320,40 @@ describe('js/admin.js loadAuditLog', () => {
     expect(rows.length).toBe(1);
     expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
   });
+
+  it('on a 401 response, re-shows the login form and hides the dashboard instead of silently rendering an empty table', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: 'Unauthorized' }),
+    });
+    const { window, document } = setupAdminPage({ fetchImpl });
+    // Simulate an already-logged-in state (as if the session just expired).
+    document.getElementById('admin-login-form').hidden = true;
+    document.getElementById('admin-dashboard').hidden = false;
+
+    window.loadAuditLog();
+    await flushMicrotasks();
+
+    expect(document.getElementById('admin-dashboard').hidden).toBe(true);
+    expect(document.getElementById('admin-login-form').hidden).toBe(false);
+    // No generic alert for the expected/handled 401 case.
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  it('alerts on a non-401 failure status instead of silently failing', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: 'boom' }),
+    });
+    const { window } = setupAdminPage({ fetchImpl });
+
+    window.loadAuditLog();
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to load audit log');
+  });
 });
 
 describe('js/admin.js Hard delete button click handling', () => {
@@ -356,5 +402,18 @@ describe('js/admin.js Hard delete button click handling', () => {
 
     // The reload rendered an empty table (the mocked reload response is []).
     expect(document.querySelectorAll('#audit-log-body tr').length).toBe(0);
+  });
+
+  it('alerts when the hard-delete DELETE fails (e.g. 401/500) instead of silently appearing to succeed', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 500, json: () => Promise.resolve({ error: 'boom' }) });
+    const confirmImpl = vi.fn(() => true);
+    const { window, document } = setupAdminPage({ fetchImpl, confirmImpl });
+
+    window.renderAuditLog([CLASS_CREATED_ENTRY]);
+    document.querySelector('.remove-btn').dispatchEvent(new window.Event('click', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1); // no follow-up loadAuditLog() call
+    expect(window.alert).toHaveBeenCalledWith('Failed to delete');
   });
 });

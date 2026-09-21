@@ -75,20 +75,33 @@ document.addEventListener('DOMContentLoaded', function () {
   loadClasses();
 });
 
+function localToday() {
+  var d = new Date();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + month + '-' + day;
+}
+
 function loadClasses() {
   var upcomingEl = document.getElementById('upcoming-classes');
   var pastEl = document.getElementById('past-classes');
   if (!upcomingEl || !pastEl) return;
 
   fetch('/api/classes')
-    .then(function (res) { return res.json(); })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to load classes');
+      return res.json();
+    })
     .then(function (classes) {
-      var today = new Date().toISOString().slice(0, 10);
+      var today = localToday();
       var upcoming = classes.filter(function (c) { return c.status !== 'cancelled' && c.date >= today; });
       var past = classes.filter(function (c) { return c.status === 'cancelled' || c.date < today; });
 
       renderClassList(upcomingEl, upcoming);
       renderClassList(pastEl, past);
+    })
+    .catch(function (err) {
+      alert(err.message);
     });
 }
 
@@ -114,9 +127,12 @@ function renderClassList(container, classes) {
 }
 
 function escapeHtml(value) {
-  var div = document.createElement('div');
-  div.textContent = value == null ? '' : String(value);
-  return div.innerHTML;
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function openClassDetail(classId) {
@@ -139,8 +155,12 @@ function openClassDetail(classId) {
     });
 }
 
+function isSafeHttpUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value);
+}
+
 function renderClassDetailHtml(cls) {
-  var zoomHtml = cls.zoom_link
+  var zoomHtml = isSafeHttpUrl(cls.zoom_link)
     ? '<div class="zoom-box"><strong>Join here:</strong> ' +
       '<a href="' + escapeHtml(cls.zoom_link) + '" target="_blank" rel="noopener">' + escapeHtml(cls.zoom_link) + '</a>' +
       (cls.zoom_notes ? '<p>' + escapeHtml(cls.zoom_notes) + '</p>' : '') +

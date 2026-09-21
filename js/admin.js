@@ -13,24 +13,43 @@ document.addEventListener('DOMContentLoaded', function () {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: formData.get('password') }),
         credentials: 'same-origin',
-      }).then(function (res) {
-        if (!res.ok) {
-          loginError.hidden = false;
-          return;
-        }
-        loginError.hidden = true;
-        loginForm.hidden = true;
-        dashboard.hidden = false;
-        loadAuditLog();
-      });
+      })
+        .then(function (res) {
+          if (!res.ok) {
+            loginError.hidden = false;
+            return;
+          }
+          loginError.hidden = true;
+          loginForm.hidden = true;
+          dashboard.hidden = false;
+          loadAuditLog();
+        })
+        .catch(function () {
+          alert('Failed to log in — check your connection');
+        });
     });
   }
 });
 
 function loadAuditLog() {
   fetch('/api/admin/audit-log', { credentials: 'same-origin' })
-    .then(function (res) { return res.json(); })
-    .then(renderAuditLog);
+    .then(function (res) {
+      if (res.status === 401) {
+        var loginForm = document.getElementById('admin-login-form');
+        var dashboard = document.getElementById('admin-dashboard');
+        if (dashboard) dashboard.hidden = true;
+        if (loginForm) loginForm.hidden = false;
+        return null;
+      }
+      if (!res.ok) throw new Error('Failed to load audit log');
+      return res.json();
+    })
+    .then(function (entries) {
+      if (entries) renderAuditLog(entries);
+    })
+    .catch(function (err) {
+      alert(err.message);
+    });
 }
 
 function renderAuditLog(entries) {
@@ -59,7 +78,13 @@ function renderAuditLog(entries) {
     btn.addEventListener('click', function () {
       if (!confirm('Permanently delete this?')) return;
       fetch(btn.getAttribute('data-endpoint'), { method: 'DELETE', credentials: 'same-origin' })
-        .then(function () { loadAuditLog(); });
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to delete');
+          loadAuditLog();
+        })
+        .catch(function (err) {
+          alert(err.message);
+        });
     });
   });
 }
@@ -73,7 +98,10 @@ function auditEntryDeleteEndpoint(entry) {
 }
 
 function escapeHtmlAdmin(value) {
-  var div = document.createElement('div');
-  div.textContent = value == null ? '' : String(value);
-  return div.innerHTML;
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

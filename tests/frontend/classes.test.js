@@ -51,7 +51,7 @@ const CLASSES_HTML_FIXTURE = `
  * functions end up reachable as `window.loadClasses` etc., exactly as they
  * would in the real page.
  */
-function setupClassesPage({ fetchImpl } = {}) {
+function setupClassesPage({ fetchImpl, dateImpl } = {}) {
   const window = new Window();
   const document = window.document;
   document.body.innerHTML = CLASSES_HTML_FIXTURE;
@@ -59,6 +59,7 @@ function setupClassesPage({ fetchImpl } = {}) {
   window.alert = vi.fn();
   window.confirm = vi.fn(() => true);
   window.fetch = fetchImpl || vi.fn();
+  if (dateImpl) window.Date = dateImpl;
 
   const context = vm.createContext(window);
   vm.runInContext(CLASSES_JS_SOURCE, context, { filename: CLASSES_JS_PATH });
@@ -79,6 +80,16 @@ describe('js/classes.js DOM behavior', () => {
 
     expect(escaped).not.toContain('<script>');
     expect(escaped).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it('escapeHtml also escapes quote characters, so it is safe to interpolate inside a double-quoted HTML attribute', () => {
+    const { window } = setupClassesPage();
+    const attributeBreakout = 'x" onfocus="alert(1)" autofocus="';
+
+    const escaped = window.escapeHtml(attributeBreakout);
+
+    expect(escaped).not.toContain('"');
+    expect(escaped).toBe('x&quot; onfocus=&quot;alert(1)&quot; autofocus=&quot;');
   });
 
   it('renderClassList renders escaped class cards, or an empty-state message when given no classes', () => {
@@ -131,6 +142,46 @@ describe('js/classes.js DOM behavior', () => {
     expect(past).toContain('Old Class');
     expect(past).toContain('Called Off');
     expect(past).not.toContain('Future Class');
+  });
+
+  it('loadClasses uses the LOCAL date (not the UTC date) to decide what counts as "today", so a class dated today-in-local-time still lands in Upcoming even when the UTC date has already rolled over to tomorrow', async () => {
+    // Simulate a moment where the UTC date and the local (wall-clock) date
+    // diverge, e.g. ~7pm US Central: UTC has already ticked into the next
+    // calendar day, but locally it is still "today". A UTC-based `today`
+    // computation (the old `new Date().toISOString().slice(0, 10)` bug)
+    // would incorrectly treat a class dated for local-today as being in the
+    // past. We simulate this by overriding the classes.js execution
+    // context's `Date` so its UTC-derived and local-derived date components
+    // disagree, independent of the host machine's actual timezone.
+    class FakeDate extends Date {
+      toISOString() {
+        return '2099-06-02T00:00:00.000Z'; // UTC date: June 2nd
+      }
+      getFullYear() {
+        return 2099;
+      }
+      getMonth() {
+        return 5; // June (0-indexed)
+      }
+      getDate() {
+        return 1; // local date: June 1st
+      }
+    }
+
+    var classes = [
+      { id: 1, title: "Today's Class (local)", date: '2099-06-01', start_time: '10:00', status: 'scheduled' },
+    ];
+    var fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(classes) });
+    var { window, document } = setupClassesPage({ fetchImpl, dateImpl: FakeDate });
+
+    window.loadClasses();
+    await flushMicrotasks();
+
+    var upcoming = document.getElementById('upcoming-classes').innerHTML;
+    var past = document.getElementById('past-classes').innerHTML;
+
+    expect(upcoming).toContain("Today's Class (local)");
+    expect(past).not.toContain("Today's Class (local)");
   });
 
   it('show/cancel buttons and the volunteer checkbox toggle form visibility as expected', () => {
@@ -495,7 +546,82 @@ describe('js/classes.js class detail modal', () => {
   });
 });
 
+describe('js/classes.js attribute-injection XSS (Fix 1)', () => {
+  it('renderEditClassSection: a title/zoom_link/zoom_notes value that attempts an attribute breakout does not create real onfocus/autofocus attributes on the rendered inputs', async () => {
+    var breakout = 'x" onfocus="alert(1)" autofocus="';
+    var detail = makeClassDetail({
+      title: breakout,
+      zoom_link: 'https://zoom.us/j/1' + breakout,
+      zoom_notes: breakout,
+    });
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    var form = document.getElementById('edit-class-form');
+    var titleInput = form.querySelector('[name="title"]');
+    var zoomLinkInput = form.querySelector('[name="zoom_link"]');
+    var zoomNotesInput = form.querySelector('[name="zoom_notes"]');
+
+    [titleInput, zoomLinkInput, zoomNotesInput].forEach(function (el) {
+      expect(el.hasAttribute('onfocus')).toBe(false);
+      expect(el.hasAttribute('autofocus')).toBe(false);
+    });
+
+    // The raw value round-trips into the `value` attribute/property (as text,
+    // not as parsed markup), it just no longer breaks out of the attribute.
+    expect(titleInput.value).toBe(breakout);
+  });
+
+  it('renderClassDetailHtml: a zoom_link value that attempts an attribute breakout does not create real onfocus/autofocus attributes on the rendered <a> element', () => {
+    var { window, document } = setupClassesPage();
+    var breakout = '" onfocus="alert(1)" autofocus="';
+    var cls = makeClassDetail({
+      zoom_link: 'https://zoom.us/j/123' + breakout,
+      zoom_notes: null,
+      volunteers: [],
+      students: [],
+    });
+
+    var body = document.getElementById('class-detail-body');
+    body.innerHTML = window.renderClassDetailHtml(cls);
+
+    var link = body.querySelector('.zoom-box a');
+    expect(link).not.toBeNull();
+    expect(link.hasAttribute('onfocus')).toBe(false);
+    expect(link.hasAttribute('autofocus')).toBe(false);
+  });
+
+  it('renderClassDetailHtml does NOT render a clickable <a> for a javascript: zoom_link, falling back to the placeholder text instead', () => {
+    var { window, document } = setupClassesPage();
+    var cls = makeClassDetail({
+      zoom_link: 'javascript:alert(1)',
+      zoom_notes: null,
+      volunteers: [],
+      students: [],
+    });
+
+    var body = document.getElementById('class-detail-body');
+    body.innerHTML = window.renderClassDetailHtml(cls);
+
+    expect(body.querySelector('.zoom-box a')).toBeNull();
+    expect(body.textContent).toContain('Zoom link will be posted by the volunteer before class.');
+  });
+});
+
 describe('js/classes.js class detail modal error handling', () => {
+  it('loadClasses alerts when GET /api/classes fails', async () => {
+    var fetchImpl = vi.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'nope' }) });
+    var { window } = setupClassesPage({ fetchImpl });
+
+    window.loadClasses();
+    await flushMicrotasks();
+
+    expect(window.alert).toHaveBeenCalledWith('Failed to load classes');
+  });
+
   it('openClassDetail alerts and leaves the modal hidden when the fetch fails', async () => {
     var fetchImpl = makeFetchRouter(makeClassDetail(), function (url, method) {
       return url === '/api/classes/42' && method === 'GET';

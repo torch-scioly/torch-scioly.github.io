@@ -1008,6 +1008,10 @@ img {
   padding: 1rem;
 }
 
+.modal[hidden] {
+  display: none;
+}
+
 .modal-content {
   background: var(--bg-white);
   border-radius: var(--radius);

@@ -25,6 +25,10 @@ async function hmac(secret, message) {
 }
 
 export async function createSessionCookie(env) {
+  if (!env.SESSION_SECRET) {
+    throw new Error('Cannot create a session cookie: SESSION_SECRET is not configured');
+  }
+
   const expiresAt = Date.now() + SESSION_TTL_MS;
   const signature = await hmac(env.SESSION_SECRET, String(expiresAt));
   const value = `${expiresAt}.${signature}`;
@@ -42,6 +46,8 @@ function readCookie(request, name) {
 }
 
 export async function isValidAdminSession(request, env) {
+  if (!env.SESSION_SECRET) return false;
+
   const value = readCookie(request, SESSION_COOKIE_NAME);
   if (!value) return false;
 
