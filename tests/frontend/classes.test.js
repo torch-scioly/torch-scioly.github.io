@@ -333,6 +333,86 @@ describe('js/classes.js class detail modal', () => {
     expect(document.getElementById('edit-class-form')).not.toBeNull();
   });
 
+  it('volunteer and student signup forms are collapsed behind "+ Sign up" buttons by default', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    expect(document.getElementById('add-volunteer-form').hidden).toBe(true);
+    expect(document.getElementById('add-student-form').hidden).toBe(true);
+    expect(document.getElementById('show-volunteer-form').hidden).toBe(false);
+    expect(document.getElementById('show-student-form').hidden).toBe(false);
+  });
+
+  it('clicking "+ Sign up as a volunteer" reveals the volunteer form and hides its own button, independent of the student form', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    document.getElementById('show-volunteer-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    expect(document.getElementById('add-volunteer-form').hidden).toBe(false);
+    expect(document.getElementById('show-volunteer-form').hidden).toBe(true);
+    expect(document.getElementById('add-student-form').hidden).toBe(true);
+    expect(document.getElementById('show-student-form').hidden).toBe(false);
+  });
+
+  it('clicking Cancel inside the volunteer form hides it, restores the "+ Sign up" button, and resets its fields', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    document.getElementById('show-volunteer-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+    document.getElementById('add-volunteer-form').querySelector('[name="name"]').value = 'Charlie';
+
+    document.getElementById('cancel-volunteer-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    expect(document.getElementById('add-volunteer-form').hidden).toBe(true);
+    expect(document.getElementById('show-volunteer-form').hidden).toBe(false);
+    expect(document.getElementById('add-volunteer-form').querySelector('[name="name"]').value).toBe('');
+  });
+
+  it('clicking "+ Sign up as a student" reveals the student form and hides its own button, independent of the volunteer form', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    document.getElementById('show-student-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    expect(document.getElementById('add-student-form').hidden).toBe(false);
+    expect(document.getElementById('show-student-form').hidden).toBe(true);
+    expect(document.getElementById('add-volunteer-form').hidden).toBe(true);
+    expect(document.getElementById('show-volunteer-form').hidden).toBe(false);
+  });
+
+  it('clicking Cancel inside the student form hides it, restores the "+ Sign up" button, and resets its fields', async () => {
+    var detail = makeClassDetail();
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+    document.getElementById('show-student-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+    document.getElementById('add-student-form').querySelector('[name="studentName"]').value = 'Dana';
+
+    document.getElementById('cancel-student-form').dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    expect(document.getElementById('add-student-form').hidden).toBe(true);
+    expect(document.getElementById('show-student-form').hidden).toBe(false);
+    expect(document.getElementById('add-student-form').querySelector('[name="studentName"]').value).toBe('');
+  });
+
   it('renderClassDetailHtml shows the zoom box with link + notes when zoom_link is set, and escapes roster/zoom content', () => {
     var { window } = setupClassesPage();
     var cls = makeClassDetail({

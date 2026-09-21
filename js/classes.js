@@ -186,20 +186,24 @@ function renderClassDetailHtml(cls) {
     zoomHtml +
     '<h3>Volunteers</h3>' +
     '<ul class="roster-list" id="volunteer-roster">' + volunteersHtml + '</ul>' +
-    '<form id="add-volunteer-form" class="signup-form">' +
+    '<button id="show-volunteer-form" class="btn btn-secondary">+ Sign up as a volunteer</button>' +
+    '<form id="add-volunteer-form" class="signup-form" hidden>' +
       '<label>Name<input type="text" name="name" required></label>' +
       '<label>Email<input type="email" name="email" required></label>' +
       '<label>Role note<input type="text" name="roleNote"></label>' +
       '<button type="submit" class="btn btn-primary">Add yourself</button>' +
+      '<button type="button" id="cancel-volunteer-form" class="btn btn-secondary">Cancel</button>' +
     '</form>' +
     '<h3>Students</h3>' +
     '<ul class="roster-list" id="student-roster">' + studentsHtml + '</ul>' +
-    '<form id="add-student-form" class="signup-form">' +
+    '<button id="show-student-form" class="btn btn-secondary">+ Sign up as a student</button>' +
+    '<form id="add-student-form" class="signup-form" hidden>' +
       '<label>Student name<input type="text" name="studentName" required></label>' +
       '<label>Grade<input type="text" name="grade"></label>' +
       '<label>Parent name<input type="text" name="parentName" required></label>' +
       '<label>Parent email<input type="email" name="parentEmail" required></label>' +
       '<button type="submit" class="btn btn-primary">Add student</button>' +
+      '<button type="button" id="cancel-student-form" class="btn btn-secondary">Cancel</button>' +
     '</form>' +
     '<div id="edit-class-section"></div>'
   );
@@ -224,7 +228,22 @@ function wireClassDetailEvents(cls) {
     });
   });
 
+  var showVolunteerFormBtn = document.getElementById('show-volunteer-form');
   var addVolunteerForm = document.getElementById('add-volunteer-form');
+  var cancelVolunteerFormBtn = document.getElementById('cancel-volunteer-form');
+  if (showVolunteerFormBtn && addVolunteerForm) {
+    showVolunteerFormBtn.addEventListener('click', function () {
+      addVolunteerForm.hidden = false;
+      showVolunteerFormBtn.hidden = true;
+    });
+  }
+  if (cancelVolunteerFormBtn && addVolunteerForm) {
+    cancelVolunteerFormBtn.addEventListener('click', function () {
+      addVolunteerForm.hidden = true;
+      showVolunteerFormBtn.hidden = false;
+      addVolunteerForm.reset();
+    });
+  }
   if (addVolunteerForm) {
     addVolunteerForm.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -248,7 +267,22 @@ function wireClassDetailEvents(cls) {
     });
   }
 
+  var showStudentFormBtn = document.getElementById('show-student-form');
   var addStudentForm = document.getElementById('add-student-form');
+  var cancelStudentFormBtn = document.getElementById('cancel-student-form');
+  if (showStudentFormBtn && addStudentForm) {
+    showStudentFormBtn.addEventListener('click', function () {
+      addStudentForm.hidden = false;
+      showStudentFormBtn.hidden = true;
+    });
+  }
+  if (cancelStudentFormBtn && addStudentForm) {
+    cancelStudentFormBtn.addEventListener('click', function () {
+      addStudentForm.hidden = true;
+      showStudentFormBtn.hidden = false;
+      addStudentForm.reset();
+    });
+  }
   if (addStudentForm) {
     addStudentForm.addEventListener('submit', function (event) {
       event.preventDefault();
