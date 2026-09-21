@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - TORCH</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Audit log and cleanup tools for class sign-ups.</p>
+  </div>
+
+  <section class="section">
+    <form id="admin-login-form" class="signup-form">
+      <label>Admin Password
+        <input type="password" name="password" required>
+      </label>
+      <button type="submit" class="btn btn-primary">Log In</button>
+      <p id="login-error" class="class-meta" hidden>Incorrect password.</p>
+    </form>
+
+    <div id="admin-dashboard" hidden>
+      <h2 class="section-title">Audit Log</h2>
+      <table class="audit-log-table">
+        <thead>
+          <tr><th>When</th><th>Class</th><th>Entity</th><th>Action</th><th>Details</th><th></th></tr>
+        </thead>
+        <tbody id="audit-log-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
