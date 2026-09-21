@@ -1,3 +1,5 @@
+var API_BASE = 'https://torch-signups.pages.dev';
+
 document.addEventListener('DOMContentLoaded', function () {
   var showFormBtn = document.getElementById('show-create-form');
   var createForm = document.getElementById('create-class-form');
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
         volunteerEmail: formData.get('volunteerEmail'),
       };
 
-      fetch('/api/classes', {
+      fetch(API_BASE + '/api/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -87,7 +89,7 @@ function loadClasses() {
   var pastEl = document.getElementById('past-classes');
   if (!upcomingEl || !pastEl) return;
 
-  fetch('/api/classes')
+  fetch(API_BASE + '/api/classes')
     .then(function (res) {
       if (!res.ok) throw new Error('Failed to load classes');
       return res.json();
@@ -140,7 +142,7 @@ function openClassDetail(classId) {
   var body = document.getElementById('class-detail-body');
   if (!modal || !body) return;
 
-  fetch('/api/classes/' + classId)
+  fetch(API_BASE + '/api/classes/' + classId)
     .then(function (res) {
       if (!res.ok) throw new Error('Failed to load class');
       return res.json();
@@ -210,7 +212,7 @@ function wireClassDetailEvents(cls) {
     btn.addEventListener('click', function () {
       var type = btn.getAttribute('data-type');
       var id = btn.getAttribute('data-id');
-      fetch('/api/classes/' + cls.id + '/' + type + '/' + id, { method: 'DELETE' })
+      fetch(API_BASE + '/api/classes/' + cls.id + '/' + type + '/' + id, { method: 'DELETE' })
         .then(function (res) {
           if (!res.ok) throw new Error('Failed to remove signup');
           openClassDetail(cls.id);
@@ -227,7 +229,7 @@ function wireClassDetailEvents(cls) {
     addVolunteerForm.addEventListener('submit', function (event) {
       event.preventDefault();
       var formData = new FormData(addVolunteerForm);
-      fetch('/api/classes/' + cls.id + '/volunteers', {
+      fetch(API_BASE + '/api/classes/' + cls.id + '/volunteers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -251,7 +253,7 @@ function wireClassDetailEvents(cls) {
     addStudentForm.addEventListener('submit', function (event) {
       event.preventDefault();
       var formData = new FormData(addStudentForm);
-      fetch('/api/classes/' + cls.id + '/students', {
+      fetch(API_BASE + '/api/classes/' + cls.id + '/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -298,7 +300,7 @@ function renderEditClassSection(cls) {
   editForm.addEventListener('submit', function (event) {
     event.preventDefault();
     var formData = new FormData(editForm);
-    fetch('/api/classes/' + cls.id, {
+    fetch(API_BASE + '/api/classes/' + cls.id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -325,7 +327,7 @@ function renderEditClassSection(cls) {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', function () {
       if (!confirm('Cancel this class?')) return;
-      fetch('/api/classes/' + cls.id, { method: 'DELETE' })
+      fetch(API_BASE + '/api/classes/' + cls.id, { method: 'DELETE' })
         .then(function (res) {
           if (!res.ok) throw new Error('Failed to cancel class');
           openClassDetail(cls.id);

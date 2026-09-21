@@ -82,10 +82,10 @@ describe('js/admin.js login flow', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, opts] = fetchImpl.mock.calls[0];
-    expect(url).toBe('/api/admin/login');
+    expect(url).toBe('https://torch-signups.pages.dev/api/admin/login');
     expect(opts.method).toBe('POST');
     expect(opts.headers['Content-Type']).toBe('application/json');
-    expect(opts.credentials).toBe('same-origin');
+    expect(opts.credentials).toBe('include');
     expect(JSON.parse(opts.body)).toEqual({ password: 'wrong-password' });
 
     const loginError = document.getElementById('login-error');
@@ -129,8 +129,8 @@ describe('js/admin.js login flow', () => {
     await flushMicrotasks();
 
     const [loginUrl, loginOpts] = fetchImpl.mock.calls[0];
-    expect(loginUrl).toBe('/api/admin/login');
-    expect(loginOpts.credentials).toBe('same-origin');
+    expect(loginUrl).toBe('https://torch-signups.pages.dev/api/admin/login');
+    expect(loginOpts.credentials).toBe('include');
     expect(JSON.parse(loginOpts.body)).toEqual({ password: 'local-test-password-123' });
 
     const loginError = document.getElementById('login-error');
@@ -143,12 +143,12 @@ describe('js/admin.js login flow', () => {
     // loadAuditLog() fired a second real fetch and rendered the result.
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     const [auditUrl, auditOpts] = fetchImpl.mock.calls[1];
-    expect(auditUrl).toBe('/api/admin/audit-log');
-    expect(auditOpts.credentials).toBe('same-origin');
+    expect(auditUrl).toBe('https://torch-signups.pages.dev/api/admin/audit-log');
+    expect(auditOpts.credentials).toBe('include');
 
     const rows = document.querySelectorAll('#audit-log-body tr');
     expect(rows.length).toBe(1);
-    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('https://torch-signups.pages.dev/api/admin/classes/2');
   });
 
   it('alerts on a network-level login failure (fetch rejects) instead of leaving the form inert', async () => {
@@ -204,17 +204,17 @@ const VOLUNTEER_REMOVED_ENTRY = {
 describe('js/admin.js auditEntryDeleteEndpoint', () => {
   it('builds the classes hard-delete endpoint from class_id for a class entry', () => {
     const { window } = setupAdminPage();
-    expect(window.auditEntryDeleteEndpoint(CLASS_CREATED_ENTRY)).toBe('/api/admin/classes/2');
+    expect(window.auditEntryDeleteEndpoint(CLASS_CREATED_ENTRY)).toBe('https://torch-signups.pages.dev/api/admin/classes/2');
   });
 
   it('builds the volunteer-signups hard-delete endpoint from snapshot.id for a volunteer_signup entry', () => {
     const { window } = setupAdminPage();
-    expect(window.auditEntryDeleteEndpoint(VOLUNTEER_CREATED_ENTRY)).toBe('/api/admin/volunteer-signups/41');
+    expect(window.auditEntryDeleteEndpoint(VOLUNTEER_CREATED_ENTRY)).toBe('https://torch-signups.pages.dev/api/admin/volunteer-signups/41');
   });
 
   it('builds the student-signups hard-delete endpoint from snapshot.id for a student_signup entry', () => {
     const { window } = setupAdminPage();
-    expect(window.auditEntryDeleteEndpoint(STUDENT_CREATED_ENTRY)).toBe('/api/admin/student-signups/52');
+    expect(window.auditEntryDeleteEndpoint(STUDENT_CREATED_ENTRY)).toBe('https://torch-signups.pages.dev/api/admin/student-signups/52');
   });
 
   it('returns null (no delete endpoint) for an entry whose action is already "removed"', () => {
@@ -254,14 +254,14 @@ describe('js/admin.js renderAuditLog', () => {
     expect(classRow.children[3].textContent).toBe('created');
     const classBtn = classRow.querySelector('.remove-btn');
     expect(classBtn).not.toBeNull();
-    expect(classBtn.getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+    expect(classBtn.getAttribute('data-endpoint')).toBe('https://torch-signups.pages.dev/api/admin/classes/2');
     expect(classBtn.textContent).toBe('Hard delete');
 
     const volunteerBtn = rows[1].querySelector('.remove-btn');
-    expect(volunteerBtn.getAttribute('data-endpoint')).toBe('/api/admin/volunteer-signups/41');
+    expect(volunteerBtn.getAttribute('data-endpoint')).toBe('https://torch-signups.pages.dev/api/admin/volunteer-signups/41');
 
     const studentBtn = rows[2].querySelector('.remove-btn');
-    expect(studentBtn.getAttribute('data-endpoint')).toBe('/api/admin/student-signups/52');
+    expect(studentBtn.getAttribute('data-endpoint')).toBe('https://torch-signups.pages.dev/api/admin/student-signups/52');
   });
 
   it('omits the Hard delete button for entries whose action is "removed"', () => {
@@ -313,12 +313,12 @@ describe('js/admin.js loadAuditLog', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, opts] = fetchImpl.mock.calls[0];
-    expect(url).toBe('/api/admin/audit-log');
-    expect(opts.credentials).toBe('same-origin');
+    expect(url).toBe('https://torch-signups.pages.dev/api/admin/audit-log');
+    expect(opts.credentials).toBe('include');
 
     const rows = document.querySelectorAll('#audit-log-body tr');
     expect(rows.length).toBe(1);
-    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('/api/admin/classes/2');
+    expect(rows[0].querySelector('.remove-btn').getAttribute('data-endpoint')).toBe('https://torch-signups.pages.dev/api/admin/classes/2');
   });
 
   it('on a 401 response, re-shows the login form and hides the dashboard instead of silently rendering an empty table', async () => {
@@ -392,13 +392,13 @@ describe('js/admin.js Hard delete button click handling', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
 
     const [deleteUrl, deleteOpts] = fetchImpl.mock.calls[0];
-    expect(deleteUrl).toBe('/api/admin/classes/2');
+    expect(deleteUrl).toBe('https://torch-signups.pages.dev/api/admin/classes/2');
     expect(deleteOpts.method).toBe('DELETE');
-    expect(deleteOpts.credentials).toBe('same-origin');
+    expect(deleteOpts.credentials).toBe('include');
 
     // The click handler's .then() calls loadAuditLog(), which re-fetches the list.
     const [reloadUrl] = fetchImpl.mock.calls[1];
-    expect(reloadUrl).toBe('/api/admin/audit-log');
+    expect(reloadUrl).toBe('https://torch-signups.pages.dev/api/admin/audit-log');
 
     // The reload rendered an empty table (the mocked reload response is []).
     expect(document.querySelectorAll('#audit-log-body tr').length).toBe(0);

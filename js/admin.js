@@ -1,3 +1,5 @@
+var API_BASE = 'https://torch-signups.pages.dev';
+
 document.addEventListener('DOMContentLoaded', function () {
   var loginForm = document.getElementById('admin-login-form');
   var loginError = document.getElementById('login-error');
@@ -8,11 +10,11 @@ document.addEventListener('DOMContentLoaded', function () {
       event.preventDefault();
       var formData = new FormData(loginForm);
 
-      fetch('/api/admin/login', {
+      fetch(API_BASE + '/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: formData.get('password') }),
-        credentials: 'same-origin',
+        credentials: 'include',
       })
         .then(function (res) {
           if (!res.ok) {
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function loadAuditLog() {
-  fetch('/api/admin/audit-log', { credentials: 'same-origin' })
+  fetch(API_BASE + '/api/admin/audit-log', { credentials: 'include' })
     .then(function (res) {
       if (res.status === 401) {
         var loginForm = document.getElementById('admin-login-form');
@@ -77,7 +79,7 @@ function renderAuditLog(entries) {
   tbody.querySelectorAll('.remove-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       if (!confirm('Permanently delete this?')) return;
-      fetch(btn.getAttribute('data-endpoint'), { method: 'DELETE', credentials: 'same-origin' })
+      fetch(btn.getAttribute('data-endpoint'), { method: 'DELETE', credentials: 'include' })
         .then(function (res) {
           if (!res.ok) throw new Error('Failed to delete');
           loadAuditLog();
@@ -91,9 +93,9 @@ function renderAuditLog(entries) {
 
 function auditEntryDeleteEndpoint(entry) {
   if (entry.action === 'removed') return null;
-  if (entry.entity_type === 'class') return '/api/admin/classes/' + entry.class_id;
-  if (entry.entity_type === 'volunteer_signup') return '/api/admin/volunteer-signups/' + entry.snapshot.id;
-  if (entry.entity_type === 'student_signup') return '/api/admin/student-signups/' + entry.snapshot.id;
+  if (entry.entity_type === 'class') return API_BASE + '/api/admin/classes/' + entry.class_id;
+  if (entry.entity_type === 'volunteer_signup') return API_BASE + '/api/admin/volunteer-signups/' + entry.snapshot.id;
+  if (entry.entity_type === 'student_signup') return API_BASE + '/api/admin/student-signups/' + entry.snapshot.id;
   return null;
 }
 

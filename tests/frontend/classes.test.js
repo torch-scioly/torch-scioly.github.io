@@ -130,7 +130,7 @@ describe('js/classes.js DOM behavior', () => {
     window.loadClasses();
     await flushMicrotasks();
 
-    expect(fetchImpl).toHaveBeenCalledWith('/api/classes');
+    expect(fetchImpl).toHaveBeenCalledWith('https://torch-signups.pages.dev/api/classes');
 
     const upcoming = document.getElementById('upcoming-classes').innerHTML;
     const past = document.getElementById('past-classes').innerHTML;
@@ -239,7 +239,7 @@ describe('js/classes.js DOM behavior', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(2); // the POST, then loadClasses()'s GET
     const [postUrl, postOpts] = fetchImpl.mock.calls[0];
-    expect(postUrl).toBe('/api/classes');
+    expect(postUrl).toBe('https://torch-signups.pages.dev/api/classes');
     expect(postOpts.method).toBe('POST');
     expect(postOpts.headers['Content-Type']).toBe('application/json');
 
@@ -255,7 +255,7 @@ describe('js/classes.js DOM behavior', () => {
     });
 
     const [getUrl] = fetchImpl.mock.calls[1];
-    expect(getUrl).toBe('/api/classes');
+    expect(getUrl).toBe('https://torch-signups.pages.dev/api/classes');
 
     // Form closes and the "+ Create a Class" button reappears after a
     // successful submit.
@@ -296,10 +296,10 @@ function makeFetchRouter(classDetail, shouldFail) {
     if (shouldFail && shouldFail(url, method)) {
       return Promise.resolve({ ok: false, json: function () { return Promise.resolve({ error: 'nope' }); } });
     }
-    if (url === '/api/classes' && method === 'GET') {
+    if (url === 'https://torch-signups.pages.dev/api/classes' && method === 'GET') {
       return Promise.resolve({ ok: true, json: function () { return Promise.resolve([]); } });
     }
-    if (/^\/api\/classes\/\d+$/.test(url) && method === 'GET') {
+    if (/^https:\/\/torch-signups\.pages\.dev\/api\/classes\/\d+$/.test(url) && method === 'GET') {
       return Promise.resolve({ ok: true, json: function () { return Promise.resolve(classDetail); } });
     }
     return Promise.resolve({ ok: true, json: function () { return Promise.resolve({}); } });
@@ -315,7 +315,7 @@ describe('js/classes.js class detail modal', () => {
     window.openClassDetail(42);
     await flushMicrotasks();
 
-    expect(fetchImpl).toHaveBeenCalledWith('/api/classes/42');
+    expect(fetchImpl).toHaveBeenCalledWith('https://torch-signups.pages.dev/api/classes/42');
     var modal = document.getElementById('class-detail-modal');
     expect(modal.hidden).toBe(false);
 
@@ -367,12 +367,12 @@ describe('js/classes.js class detail modal', () => {
     await flushMicrotasks();
 
     var deleteCall = fetchImpl.mock.calls.find(function (c) { return c[1] && c[1].method === 'DELETE'; });
-    expect(deleteCall[0]).toBe('/api/classes/42/volunteers/1');
+    expect(deleteCall[0]).toBe('https://torch-signups.pages.dev/api/classes/42/volunteers/1');
 
     // wireClassDetailEvents' remove handler re-opens the detail view and
     // refreshes the card list on success.
-    var getDetailCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === '/api/classes/42'; });
-    var getListCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === '/api/classes'; });
+    var getDetailCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42'; });
+    var getListCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes'; });
     expect(getDetailCalls.length).toBe(1);
     expect(getListCalls.length).toBe(1);
   });
@@ -393,7 +393,7 @@ describe('js/classes.js class detail modal', () => {
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     await flushMicrotasks();
 
-    var postCall = fetchImpl.mock.calls.find(function (c) { return c[0] === '/api/classes/42/volunteers'; });
+    var postCall = fetchImpl.mock.calls.find(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42/volunteers'; });
     expect(postCall[1].method).toBe('POST');
     expect(postCall[1].headers['Content-Type']).toBe('application/json');
     expect(JSON.parse(postCall[1].body)).toEqual({
@@ -420,7 +420,7 @@ describe('js/classes.js class detail modal', () => {
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     await flushMicrotasks();
 
-    var postCall = fetchImpl.mock.calls.find(function (c) { return c[0] === '/api/classes/42/students'; });
+    var postCall = fetchImpl.mock.calls.find(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42/students'; });
     expect(postCall[1].method).toBe('POST');
     expect(JSON.parse(postCall[1].body)).toEqual({
       studentName: 'Dana',
@@ -472,7 +472,7 @@ describe('js/classes.js class detail modal', () => {
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     await flushMicrotasks();
 
-    var putCall = fetchImpl.mock.calls.find(function (c) { return c[0] === '/api/classes/42' && c[1] && c[1].method === 'PUT'; });
+    var putCall = fetchImpl.mock.calls.find(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42' && c[1] && c[1].method === 'PUT'; });
     expect(putCall).toBeTruthy();
     var body = JSON.parse(putCall[1].body);
     expect(body.zoom_link).toBe('https://zoom.us/j/555');
@@ -480,8 +480,8 @@ describe('js/classes.js class detail modal', () => {
     expect(body.title).toBe('Robotics 101');
 
     // Success handler re-opens the detail view and refreshes the class list.
-    var getDetailCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === '/api/classes/42' && (!c[1] || !c[1].method); });
-    var getListCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === '/api/classes'; });
+    var getDetailCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42' && (!c[1] || !c[1].method); });
+    var getListCalls = fetchImpl.mock.calls.filter(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes'; });
     expect(getDetailCalls.length).toBe(1);
     expect(getListCalls.length).toBe(1);
   });
@@ -501,7 +501,7 @@ describe('js/classes.js class detail modal', () => {
     await flushMicrotasks();
 
     expect(window.confirm).toHaveBeenCalled();
-    var deleteCall = fetchImpl.mock.calls.find(function (c) { return c[0] === '/api/classes/42' && c[1] && c[1].method === 'DELETE'; });
+    var deleteCall = fetchImpl.mock.calls.find(function (c) { return c[0] === 'https://torch-signups.pages.dev/api/classes/42' && c[1] && c[1].method === 'DELETE'; });
     expect(deleteCall).toBeTruthy();
   });
 
@@ -624,7 +624,7 @@ describe('js/classes.js class detail modal error handling', () => {
 
   it('openClassDetail alerts and leaves the modal hidden when the fetch fails', async () => {
     var fetchImpl = makeFetchRouter(makeClassDetail(), function (url, method) {
-      return url === '/api/classes/42' && method === 'GET';
+      return url === 'https://torch-signups.pages.dev/api/classes/42' && method === 'GET';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 
@@ -638,7 +638,7 @@ describe('js/classes.js class detail modal error handling', () => {
   it('remove-btn click alerts when the DELETE fails', async () => {
     var detail = makeClassDetail();
     var fetchImpl = makeFetchRouter(detail, function (url, method) {
-      return method === 'DELETE' && url === '/api/classes/42/volunteers/1';
+      return method === 'DELETE' && url === 'https://torch-signups.pages.dev/api/classes/42/volunteers/1';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 
@@ -657,7 +657,7 @@ describe('js/classes.js class detail modal error handling', () => {
   it('add-volunteer-form submit alerts when the POST fails (e.g. backend validation 400)', async () => {
     var detail = makeClassDetail();
     var fetchImpl = makeFetchRouter(detail, function (url, method) {
-      return method === 'POST' && url === '/api/classes/42/volunteers';
+      return method === 'POST' && url === 'https://torch-signups.pages.dev/api/classes/42/volunteers';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 
@@ -677,7 +677,7 @@ describe('js/classes.js class detail modal error handling', () => {
   it('add-student-form submit alerts when the POST fails (e.g. missing parentEmail, which the backend 400s on)', async () => {
     var detail = makeClassDetail();
     var fetchImpl = makeFetchRouter(detail, function (url, method) {
-      return method === 'POST' && url === '/api/classes/42/students';
+      return method === 'POST' && url === 'https://torch-signups.pages.dev/api/classes/42/students';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 
@@ -698,7 +698,7 @@ describe('js/classes.js class detail modal error handling', () => {
   it('edit-class-form submit alerts when the PUT fails', async () => {
     var detail = makeClassDetail();
     var fetchImpl = makeFetchRouter(detail, function (url, method) {
-      return method === 'PUT' && url === '/api/classes/42';
+      return method === 'PUT' && url === 'https://torch-signups.pages.dev/api/classes/42';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 
@@ -717,7 +717,7 @@ describe('js/classes.js class detail modal error handling', () => {
   it('cancel-class-btn click alerts when the DELETE fails', async () => {
     var detail = makeClassDetail({ status: 'scheduled' });
     var fetchImpl = makeFetchRouter(detail, function (url, method) {
-      return method === 'DELETE' && url === '/api/classes/42';
+      return method === 'DELETE' && url === 'https://torch-signups.pages.dev/api/classes/42';
     });
     var { window, document } = setupClassesPage({ fetchImpl });
 

@@ -32,7 +32,7 @@ export async function createSessionCookie(env) {
   const expiresAt = Date.now() + SESSION_TTL_MS;
   const signature = await hmac(env.SESSION_SECRET, String(expiresAt));
   const value = `${expiresAt}.${signature}`;
-  return `${SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_TTL_MS / 1000}`;
+  return `${SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=${SESSION_TTL_MS / 1000}`;
 }
 
 function readCookie(request, name) {
