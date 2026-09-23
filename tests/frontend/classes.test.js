@@ -101,17 +101,51 @@ describe('js/classes.js DOM behavior', () => {
         title: '<img src=x onerror=alert(1)>Robotics 101',
         date: '2026-12-25',
         start_time: '09:30',
+        end_time: '10:30',
         status: 'scheduled',
+        volunteers: [],
       },
     ]);
 
     expect(container.innerHTML).not.toContain('<img src=x');
     expect(container.innerHTML).toContain('&lt;img src=x onerror=alert(1)&gt;Robotics 101');
-    expect(container.innerHTML).toContain('2026-12-25 at 09:30');
+    expect(container.innerHTML).toContain('2026-12-25 · 09:30–10:30');
     expect(container.querySelectorAll('.class-card').length).toBe(1);
 
     window.renderClassList(container, []);
     expect(container.innerHTML).toContain('No classes here yet.');
+  });
+
+  it('renderClassList links each volunteer name to their profile on the volunteers page', () => {
+    const { window, document } = setupClassesPage();
+    const container = document.getElementById('upcoming-classes');
+
+    window.renderClassList(container, [
+      {
+        id: 1,
+        title: 'Genetics (Heredity)',
+        date: '2026-12-25',
+        start_time: '18:00',
+        end_time: '19:00',
+        status: 'scheduled',
+        volunteers: [{ id: 1, name: 'Adhya Kidiyoor' }],
+      },
+    ]);
+
+    var link = container.querySelector('a[href="volunteers.html#adhya-kidiyoor"]');
+    expect(link).not.toBeNull();
+    expect(link.textContent).toBe('Adhya Kidiyoor');
+  });
+
+  it('renderClassList omits the "Taught by" line when a class has no volunteers yet', () => {
+    const { window, document } = setupClassesPage();
+    const container = document.getElementById('upcoming-classes');
+
+    window.renderClassList(container, [
+      { id: 1, title: 'Unstaffed', date: '2026-12-25', start_time: '18:00', end_time: '19:00', status: 'scheduled', volunteers: [] },
+    ]);
+
+    expect(container.innerHTML).not.toContain('Taught by');
   });
 
   it('loadClasses fetches /api/classes and splits results into #upcoming-classes vs #past-classes by date', async () => {

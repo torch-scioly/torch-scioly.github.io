@@ -70,6 +70,24 @@ describe('POST /api/classes', () => {
     expect(body.end_time).toBe('17:00');
   });
 
+  it('includes volunteer names for each class in the list response', async () => {
+    await onRequestPost({
+      request: jsonRequest({
+        title: 'Astronomy',
+        date: '2026-10-09',
+        startTime: '15:00',
+        signUpAsVolunteer: true,
+        volunteerName: 'Priya',
+        volunteerEmail: 'priya@example.com',
+      }),
+      env,
+    });
+
+    const list = await (await onRequestGet({ env })).json();
+    const found = list.find((c) => c.title === 'Astronomy');
+    expect(found.volunteers).toEqual([{ id: expect.any(Number), name: 'Priya' }]);
+  });
+
   it('signs the creator up as a volunteer when requested', async () => {
     const response = await onRequestPost({
       request: jsonRequest({

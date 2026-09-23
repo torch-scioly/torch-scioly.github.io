@@ -34,6 +34,24 @@ describe('classes', () => {
     expect(all[0].id).toBe(created.id);
   });
 
+  it('includes each class\'s volunteer signups in the list', async () => {
+    const cls = await createClass(env.DB, { title: 'Botany', date: '2026-10-07', startTime: '09:00' });
+    const signup = await addVolunteerSignup(env.DB, cls.id, { name: 'Jairam', email: 'jairam@example.com' });
+
+    const all = await listClasses(env.DB);
+    const found = all.find((c) => c.id === cls.id);
+
+    expect(found.volunteers).toEqual([{ id: signup.id, name: 'Jairam' }]);
+  });
+
+  it('returns an empty volunteers array for a class with no signups', async () => {
+    const cls = await createClass(env.DB, { title: 'No Volunteers Yet', date: '2026-10-08', startTime: '09:00' });
+
+    const all = await listClasses(env.DB);
+
+    expect(all.find((c) => c.id === cls.id).volunteers).toEqual([]);
+  });
+
   it('gets a class by id, returning null when missing', async () => {
     const created = await createClass(env.DB, {
       title: 'Astronomy',

@@ -10,8 +10,20 @@ export async function createClass(db, { title, description, date, startTime, end
 }
 
 export async function listClasses(db) {
-  const { results } = await db.prepare(`SELECT * FROM classes ORDER BY date ASC, start_time ASC`).all();
-  return results;
+  const { results } = await db
+    .prepare(
+      `SELECT c.*,
+              (SELECT json_group_array(json_object('id', v.id, 'name', v.name))
+                 FROM volunteer_signups v WHERE v.class_id = c.id) AS volunteers_json
+       FROM classes c
+       ORDER BY c.date ASC, c.start_time ASC`
+    )
+    .all();
+
+  return results.map(({ volunteers_json, ...cls }) => ({
+    ...cls,
+    volunteers: JSON.parse(volunteers_json),
+  }));
 }
 
 export async function getClassById(db, id) {

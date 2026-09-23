@@ -114,17 +114,41 @@ function renderClassList(container, classes) {
   }
 
   classes.forEach(function (cls) {
+    var volunteers = cls.volunteers || [];
+    var volunteersHtml = volunteers.length
+      ? '<p class="class-meta">Taught by ' + volunteers.map(volunteerLinkHtml).join(', ') + '</p>'
+      : '';
+
     var card = document.createElement('div');
     card.className = 'class-card' + (cls.status === 'cancelled' ? ' cancelled' : '');
     card.innerHTML =
       '<h3>' + escapeHtml(cls.title) + '</h3>' +
-      '<p class="class-meta">' + escapeHtml(cls.date) + ' at ' + escapeHtml(cls.start_time) + '</p>' +
+      '<p class="class-meta">' + escapeHtml(cls.date) + ' &middot; ' + escapeHtml(cls.start_time) +
+      (cls.end_time ? '&ndash;' + escapeHtml(cls.end_time) : '') + '</p>' +
+      volunteersHtml +
       (cls.status === 'cancelled' ? '<p class="class-meta">Cancelled</p>' : '');
+    card.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.stopPropagation();
+      });
+    });
     card.addEventListener('click', function () {
       openClassDetail(cls.id);
     });
     container.appendChild(card);
   });
+}
+
+function volunteerLinkHtml(volunteer) {
+  return '<a href="volunteers.html#' + slugifyName(volunteer.name) + '">' + escapeHtml(volunteer.name) + '</a>';
+}
+
+function slugifyName(name) {
+  return String(name)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function escapeHtml(value) {
