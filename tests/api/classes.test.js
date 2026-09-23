@@ -51,6 +51,25 @@ describe('POST /api/classes', () => {
     expect(response.status).toBe(400);
   });
 
+  it('rejects a startTime that is not on a 15-minute mark', async () => {
+    const response = await onRequestPost({
+      request: jsonRequest({ title: 'Off-grid', date: '2026-10-01', startTime: '16:07' }),
+      env,
+    });
+    expect(response.status).toBe(400);
+  });
+
+  it('always sets a one-hour window, ignoring any client-supplied endTime', async () => {
+    const response = await onRequestPost({
+      request: jsonRequest({ title: 'Genetics', date: '2026-10-01', startTime: '16:00', endTime: '23:59' }),
+      env,
+    });
+
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body.end_time).toBe('17:00');
+  });
+
   it('signs the creator up as a volunteer when requested', async () => {
     const response = await onRequestPost({
       request: jsonRequest({

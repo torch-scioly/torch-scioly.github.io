@@ -61,6 +61,33 @@ describe('PUT /api/classes/:id', () => {
     });
     expect(response.status).toBe(404);
   });
+
+  it('re-derives end_time as one hour after a changed startTime', async () => {
+    const cls = await createFixtureClass();
+
+    const response = await onRequestPut({
+      request: new Request('https://example.com', { method: 'PUT', body: JSON.stringify({ startTime: '18:30' }) }),
+      env,
+      params: { id: String(cls.id) },
+    });
+
+    expect(response.status).toBe(200);
+    const updated = await response.json();
+    expect(updated.start_time).toBe('18:30');
+    expect(updated.end_time).toBe('19:30');
+  });
+
+  it('rejects a startTime that is not on a 15-minute mark', async () => {
+    const cls = await createFixtureClass();
+
+    const response = await onRequestPut({
+      request: new Request('https://example.com', { method: 'PUT', body: JSON.stringify({ startTime: '18:07' }) }),
+      env,
+      params: { id: String(cls.id) },
+    });
+
+    expect(response.status).toBe(400);
+  });
 });
 
 describe('DELETE /api/classes/:id', () => {

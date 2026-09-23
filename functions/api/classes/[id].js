@@ -1,12 +1,12 @@
 import { getClassById, updateClass, listVolunteerSignups, listStudentSignups } from '../_lib/db.js';
 import { writeAuditLog } from '../_lib/audit.js';
+import { isQuarterHourTime, addOneHour } from '../_lib/time.js';
 
 const EDITABLE_FIELDS = {
   title: 'title',
   description: 'description',
   date: 'date',
   startTime: 'start_time',
-  endTime: 'end_time',
   zoom_link: 'zoom_link',
   zoom_notes: 'zoom_notes',
 };
@@ -38,6 +38,16 @@ export async function onRequestPut({ request, env, params }) {
 
   if (Object.keys(fields).length === 0) {
     return Response.json({ error: 'No fields to update' }, { status: 400 });
+  }
+
+  if ('start_time' in fields) {
+    if (!isQuarterHourTime(fields.start_time)) {
+      return Response.json(
+        { error: 'startTime must be on the hour or a 15-minute mark (e.g. 09:00, 09:15, 09:30, 09:45)' },
+        { status: 400 }
+      );
+    }
+    fields.end_time = addOneHour(fields.start_time);
   }
 
   const updated = await updateClass(env.DB, classId, fields);

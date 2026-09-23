@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function () {
         description: formData.get('description'),
         date: formData.get('date'),
         startTime: formData.get('startTime'),
-        endTime: formData.get('endTime') || undefined,
         signUpAsVolunteer: formData.get('signUpAsVolunteer') === 'on',
         volunteerName: formData.get('volunteerName'),
         volunteerEmail: formData.get('volunteerEmail'),
@@ -320,8 +319,8 @@ function renderEditClassSection(cls) {
       '<label>Title<input type="text" name="title" value="' + escapeHtml(cls.title) + '" required></label>' +
       '<label>Description<textarea name="description">' + escapeHtml(cls.description || '') + '</textarea></label>' +
       '<label>Date<input type="date" name="date" value="' + escapeHtml(cls.date) + '" required></label>' +
-      '<label>Start Time<input type="time" name="startTime" value="' + escapeHtml(cls.start_time) + '" required></label>' +
-      '<label>End Time<input type="time" name="endTime" value="' + escapeHtml(cls.end_time || '') + '"></label>' +
+      '<label>Start Time<input type="time" name="startTime" step="900" value="' + escapeHtml(cls.start_time) + '" required></label>' +
+      '<p class="class-meta">Classes run for a 1-hour window, starting on the hour or a 15-minute mark.</p>' +
       '<label>Zoom Link<input type="url" name="zoom_link" value="' + escapeHtml(cls.zoom_link || '') + '"></label>' +
       '<label>Zoom Notes<input type="text" name="zoom_notes" value="' + escapeHtml(cls.zoom_notes || '') + '"></label>' +
       '<button type="submit" class="btn btn-primary">Save Changes</button>' +
@@ -342,7 +341,6 @@ function renderEditClassSection(cls) {
         description: formData.get('description'),
         date: formData.get('date'),
         startTime: formData.get('startTime'),
-        endTime: formData.get('endTime') || null,
         zoom_link: formData.get('zoom_link') || null,
         zoom_notes: formData.get('zoom_notes') || null,
       }),

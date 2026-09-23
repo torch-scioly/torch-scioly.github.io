@@ -18,8 +18,7 @@ const CLASSES_HTML_FIXTURE = `
     <input type="text" name="title" required>
     <textarea name="description"></textarea>
     <input type="date" name="date" required>
-    <input type="time" name="startTime" required>
-    <input type="time" name="endTime">
+    <input type="time" name="startTime" step="900" required>
     <label class="checkbox-label">
       <input type="checkbox" name="signUpAsVolunteer" checked>
     </label>
@@ -531,7 +530,7 @@ describe('js/classes.js class detail modal', () => {
     expect(form.querySelector('[name="description"]').value).toBe('Learn robots');
     expect(form.querySelector('[name="date"]').value).toBe('2026-12-25');
     expect(form.querySelector('[name="startTime"]').value).toBe('09:30');
-    expect(form.querySelector('[name="endTime"]').value).toBe('10:30');
+    expect(form.querySelector('[name="endTime"]')).toBeNull();
     expect(form.querySelector('[name="zoom_link"]').value).toBe('https://zoom.us/j/999');
     expect(form.querySelector('[name="zoom_notes"]').value).toBe('Bring a laptop');
     expect(document.getElementById('cancel-class-btn')).not.toBeNull();
