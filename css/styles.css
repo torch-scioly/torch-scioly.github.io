@@ -355,6 +355,48 @@ img {
   color: #c0392b;
 }
 
+/* ===== Volunteer Tier Badges (Spark → Flame → Blaze → Torchbearer) ===== */
+.tier-badge {
+  display: inline-block;
+  margin: 0.25rem auto 0.6rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tier-spark {
+  background: #fef5e7;
+  color: #b9770e;
+}
+
+.tier-flame {
+  background: #fdebd0;
+  color: #af601a;
+}
+
+.tier-blaze {
+  background: #f5b041;
+  color: #6e2c00;
+}
+
+.tier-torchbearer {
+  background: linear-gradient(135deg, #e67e22 0%, #c0392b 100%);
+  color: #fff;
+}
+
+.tier-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tier-legend .tier-badge {
+  margin: 0;
+}
+
 /* ===== Course Cards ===== */
 .course-details {
   border-top: 1px solid var(--border);
