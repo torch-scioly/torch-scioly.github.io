@@ -3,7 +3,9 @@ import { env } from 'cloudflare:test';
 import { onRequestGet as getStats } from '../../functions/api/stats.js';
 import { createClass, updateClass, addVolunteerSignup, addStudentSignup } from '../../functions/api/_lib/db.js';
 
-const PAST = '2020-01-15';
+// Held classes count from 2026-10-03 (COUNTING_START in functions/api/stats.js).
+const PAST = '2026-10-05';
+const BEFORE_COUNTING_START = '2026-10-02';
 const FUTURE = '2999-01-15';
 
 async function fixtureClass(date, startTime = '10:00') {
@@ -84,6 +86,29 @@ describe('GET /api/stats — volunteerHours', () => {
     await addVolunteerSignup(env.DB, b.id, { name: 'Adhya', email: 'adhya@example.com' });
 
     expect((await fetchStats()).volunteerHours['adhya-kidiyoor']).toBe(2);
+  });
+
+  it('ignores classes held before the counting start date', async () => {
+    const early = await fixtureClass(BEFORE_COUNTING_START);
+    await addVolunteerSignup(env.DB, early.id, { name: 'Veda', email: 'veda@example.com' });
+
+    expect((await fetchStats()).volunteerHours['veda-khande']).toBe(0);
+  });
+
+  it('credits the course instructor for a held class with no volunteers', async () => {
+    await createClass(env.DB, { title: 'Anatomy and Physiology', date: PAST, startTime: '14:00', endTime: '15:00' });
+
+    expect((await fetchStats()).volunteerHours['anvitha-gottipati']).toBe(1);
+  });
+
+  it('does not credit the course instructor when the class has a volunteer', async () => {
+    const cls = await createClass(env.DB, { title: 'Water Quality', date: PAST, startTime: '14:00', endTime: '15:00' });
+    await addVolunteerSignup(env.DB, cls.id, { name: 'Adhya', email: 'adhya@example.com' });
+
+    const stats = await fetchStats();
+
+    expect(stats.volunteerHours['veda-khande']).toBe(0);
+    expect(stats.volunteerHours['adhya-kidiyoor']).toBe(1);
   });
 
   it('reports zero hours for a profiled volunteer with no classes', async () => {

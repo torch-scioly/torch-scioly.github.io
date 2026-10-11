@@ -3,6 +3,12 @@ import { env } from 'cloudflare:test';
 import { onRequestPost as createClassRequest } from '../../functions/api/classes.js';
 import { onRequestGet, onRequestPut, onRequestDelete } from '../../functions/api/classes/[id].js';
 import { listAuditLog } from '../../functions/api/_lib/audit.js';
+import {
+  addVolunteerSignup,
+  addStudentSignup,
+  listVolunteerSignups,
+  listStudentSignups,
+} from '../../functions/api/_lib/db.js';
 
 async function createFixtureClass(overrides = {}) {
   const response = await createClassRequest({
@@ -87,6 +93,90 @@ describe('PUT /api/classes/:id', () => {
     });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe('PUT /api/classes/:id — date changes', () => {
+  function put(cls, body) {
+    return onRequestPut({
+      request: new Request('https://example.com', { method: 'PUT', body: JSON.stringify(body) }),
+      env,
+      params: { id: String(cls.id) },
+    });
+  }
+
+  async function classesTitled(title) {
+    const { results } = await env.DB.prepare('SELECT * FROM classes WHERE title = ? ORDER BY date').bind(title).all();
+    return results;
+  }
+
+  it('requires dateChange when the date changes', async () => {
+    const cls = await createFixtureClass({ title: 'Needs Choice', date: '2020-03-01' });
+
+    const response = await put(cls, { date: '2999-03-08' });
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toMatch(/dateChange/);
+  });
+
+  it('rejects an unknown dateChange value', async () => {
+    const cls = await createFixtureClass({ title: 'Bad Choice', date: '2020-03-01' });
+
+    const response = await put(cls, { date: '2999-03-08', dateChange: 'maybe' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('does not require dateChange when the date is sent unchanged', async () => {
+    const cls = await createFixtureClass({ title: 'Same Date', date: '2020-03-01' });
+
+    const response = await put(cls, { date: '2020-03-01', title: 'Same Date' });
+
+    expect(response.status).toBe(200);
+  });
+
+  it('reschedule moves the class without keeping the old date', async () => {
+    const cls = await createFixtureClass({ title: 'Moved', date: '2020-03-01' });
+
+    const response = await put(cls, { date: '2999-03-08', dateChange: 'reschedule' });
+
+    expect(response.status).toBe(200);
+    const rows = await classesTitled('Moved');
+    expect(rows.map((r) => r.date)).toEqual(['2999-03-08']);
+  });
+
+  it('next_session keeps the held session as a past class with its rosters, then moves the class', async () => {
+    const cls = await createFixtureClass({ title: 'Weekly Rocks', date: '2020-03-01', startTime: '10:00' });
+    await addVolunteerSignup(env.DB, cls.id, { name: 'Vibha', email: 'vibha@example.com' });
+    await addStudentSignup(env.DB, cls.id, { studentName: 'Kid', parentName: 'P', parentEmail: 'p@example.com' });
+
+    const response = await put(cls, { date: '2999-03-08', dateChange: 'next_session' });
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).date).toBe('2999-03-08');
+
+    const rows = await classesTitled('Weekly Rocks');
+    expect(rows.map((r) => r.date)).toEqual(['2020-03-01', '2999-03-08']);
+    const held = rows[0];
+    expect(held.id).not.toBe(cls.id);
+    expect(held.start_time).toBe('10:00');
+    expect(held.status).not.toBe('cancelled');
+    expect((await listVolunteerSignups(env.DB, held.id)).map((v) => v.email)).toEqual(['vibha@example.com']);
+    expect(await listStudentSignups(env.DB, held.id)).toHaveLength(1);
+    // The moving class keeps its own rosters.
+    expect(await listVolunteerSignups(env.DB, cls.id)).toHaveLength(1);
+
+    const log = await listAuditLog(env.DB);
+    expect(log.some((e) => e.class_id === held.id && e.action === 'created')).toBe(true);
+  });
+
+  it('next_session is rejected when the current session has not happened yet', async () => {
+    const cls = await createFixtureClass({ title: 'Future One', date: '2999-01-01' });
+
+    const response = await put(cls, { date: '2999-01-08', dateChange: 'next_session' });
+
+    expect(response.status).toBe(400);
+    expect(await classesTitled('Future One')).toHaveLength(1);
   });
 });
 

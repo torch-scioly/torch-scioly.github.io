@@ -343,6 +343,14 @@ function renderEditClassSection(cls) {
       '<label>Title<input type="text" name="title" value="' + escapeHtml(cls.title) + '" required></label>' +
       '<label>Description<textarea name="description">' + escapeHtml(cls.description || '') + '</textarea></label>' +
       '<label>Date<input type="date" name="date" value="' + escapeHtml(cls.date) + '" required></label>' +
+      '<fieldset id="date-change-choice" class="date-change-choice" hidden>' +
+        '<legend>What happened to the ' + escapeHtml(cls.date) + ' session?</legend>' +
+        '<label class="checkbox-label"><input type="radio" name="dateChange" value="reschedule"> ' +
+          'Reschedule &mdash; it didn\'t happen, move it to the new date</label>' +
+        '<label class="checkbox-label"><input type="radio" name="dateChange" value="next_session"' +
+          (cls.date > localToday() ? ' disabled' : '') + '> ' +
+          'Next session &mdash; it was held; keep it in Past Classes and schedule the next one</label>' +
+      '</fieldset>' +
       '<label>Start Time<input type="time" name="startTime" step="900" value="' + escapeHtml(cls.start_time) + '" required></label>' +
       '<p class="class-meta">Classes run for a 1-hour window, starting on the hour or a 15-minute mark.</p>' +
       '<label>Zoom Link<input type="url" name="zoom_link" value="' + escapeHtml(cls.zoom_link || '') + '"></label>' +
@@ -354,20 +362,45 @@ function renderEditClassSection(cls) {
       : '<button id="cancel-class-btn" class="btn btn-danger">Cancel This Class</button>');
 
   var editForm = document.getElementById('edit-class-form');
+  var dateInput = editForm.querySelector('[name="date"]');
+  var dateChoice = document.getElementById('date-change-choice');
+  var dateChoiceRadios = editForm.querySelectorAll('[name="dateChange"]');
+
+  // Changing the date must say whether the current session was held (next session)
+  // or never happened (reschedule), so held classes are counted correctly.
+  var toggleDateChoice = function () {
+    var changed = dateInput.value !== cls.date;
+    dateChoice.hidden = !changed;
+    dateChoiceRadios.forEach(function (radio) {
+      radio.required = changed;
+    });
+  };
+  dateInput.addEventListener('change', toggleDateChoice);
+  dateInput.addEventListener('input', toggleDateChoice);
+
   editForm.addEventListener('submit', function (event) {
     event.preventDefault();
     var formData = new FormData(editForm);
+    var payload = {
+      title: formData.get('title'),
+      description: formData.get('description'),
+      date: formData.get('date'),
+      startTime: formData.get('startTime'),
+      zoom_link: formData.get('zoom_link') || null,
+      zoom_notes: formData.get('zoom_notes') || null,
+    };
+    if (payload.date !== cls.date) {
+      var choice = editForm.querySelector('[name="dateChange"]:checked');
+      if (!choice) {
+        alert('Please choose Reschedule or Next session for the date change.');
+        return;
+      }
+      payload.dateChange = choice.value;
+    }
     fetch(API_BASE + '/api/classes/' + cls.id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: formData.get('title'),
-        description: formData.get('description'),
-        date: formData.get('date'),
-        startTime: formData.get('startTime'),
-        zoom_link: formData.get('zoom_link') || null,
-        zoom_notes: formData.get('zoom_notes') || null,
-      }),
+      body: JSON.stringify(payload),
     })
       .then(function (res) {
         if (!res.ok) throw new Error('Failed to update class');

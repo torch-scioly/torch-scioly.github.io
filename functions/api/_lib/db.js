@@ -100,3 +100,33 @@ export async function getStudentSignup(db, id) {
 export async function removeStudentSignup(db, id) {
   await db.prepare(`DELETE FROM student_signups WHERE id = ?`).bind(id).run();
 }
+
+// Saves a class's current session as its own (past) class row with copies of its
+// volunteer and student rosters. Used when a recurring class moves on to its next session.
+export async function copyClassSession(db, cls) {
+  const copy = await db
+    .prepare(
+      `INSERT INTO classes (title, description, date, start_time, end_time, zoom_link, zoom_notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING *`
+    )
+    .bind(cls.title, cls.description, cls.date, cls.start_time, cls.end_time, cls.zoom_link, cls.zoom_notes, cls.status)
+    .first();
+
+  await db
+    .prepare(
+      `INSERT INTO volunteer_signups (class_id, name, email, role_note, created_at)
+       SELECT ?, name, email, role_note, created_at FROM volunteer_signups WHERE class_id = ?`
+    )
+    .bind(copy.id, cls.id)
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO student_signups (class_id, student_name, grade, parent_name, parent_email, created_at)
+       SELECT ?, student_name, grade, parent_name, parent_email, created_at FROM student_signups WHERE class_id = ?`
+    )
+    .bind(copy.id, cls.id)
+    .run();
+
+  return copy;
+}

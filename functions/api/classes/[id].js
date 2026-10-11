@@ -1,6 +1,10 @@
-import { getClassById, updateClass, listVolunteerSignups, listStudentSignups } from '../_lib/db.js';
+import { getClassById, updateClass, listVolunteerSignups, listStudentSignups, copyClassSession } from '../_lib/db.js';
 import { writeAuditLog } from '../_lib/audit.js';
 import { isQuarterHourTime, addOneHour } from '../_lib/time.js';
+
+// How a date change is recorded: 'reschedule' moves the session (it never happened);
+// 'next_session' means the current session was held, so it is kept as a past class.
+const DATE_CHANGE_MODES = ['reschedule', 'next_session'];
 
 const EDITABLE_FIELDS = {
   title: 'title',
@@ -48,6 +52,27 @@ export async function onRequestPut({ request, env, params }) {
       );
     }
     fields.end_time = addOneHour(fields.start_time);
+  }
+
+  const dateChanged = 'date' in fields && fields.date !== existing.date;
+  if (dateChanged) {
+    if (!DATE_CHANGE_MODES.includes(body.dateChange)) {
+      return Response.json(
+        { error: "Changing the date requires dateChange: 'reschedule' or 'next_session'" },
+        { status: 400 }
+      );
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (body.dateChange === 'next_session') {
+      if (existing.date > today) {
+        return Response.json(
+          { error: 'This session has not happened yet — reschedule it instead' },
+          { status: 400 }
+        );
+      }
+      const held = await copyClassSession(env.DB, existing);
+      await writeAuditLog(env.DB, { classId: held.id, entityType: 'class', action: 'created', snapshot: held });
+    }
   }
 
   const updated = await updateClass(env.DB, classId, fields);

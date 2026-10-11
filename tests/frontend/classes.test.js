@@ -844,3 +844,78 @@ describe('js/classes.js class detail modal error handling', () => {
     expect(window.alert).toHaveBeenCalledWith('Failed to cancel class');
   });
 });
+
+describe('js/classes.js edit form — reschedule vs next session', () => {
+  async function openEdit(detailOverrides) {
+    var detail = makeClassDetail(detailOverrides);
+    var fetchImpl = makeFetchRouter(detail);
+    var page = setupClassesPage({ fetchImpl });
+    page.window.openClassDetail(42);
+    await flushMicrotasks();
+    fetchImpl.mockClear();
+    var form = page.document.getElementById('edit-class-form');
+    return Object.assign(page, { fetchImpl, form });
+  }
+
+  function changeDate(window, form, value) {
+    var input = form.querySelector('[name="date"]');
+    input.value = value;
+    input.dispatchEvent(new window.Event('change', { bubbles: true }));
+  }
+
+  function submit(window, form) {
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    return flushMicrotasks();
+  }
+
+  function putBody(fetchImpl) {
+    var call = fetchImpl.mock.calls.find(function (c) { return c[1] && c[1].method === 'PUT'; });
+    return call ? JSON.parse(call[1].body) : null;
+  }
+
+  it('hides the choice until the date is changed', async () => {
+    var { window, document, form } = await openEdit({ date: '2020-03-01' });
+
+    expect(document.getElementById('date-change-choice').hidden).toBe(true);
+    changeDate(window, form, '2020-03-08');
+    expect(document.getElementById('date-change-choice').hidden).toBe(false);
+    expect(form.querySelector('[name="dateChange"][value="reschedule"]').required).toBe(true);
+  });
+
+  it('blocks saving a changed date until reschedule or next session is picked', async () => {
+    var { window, form, fetchImpl } = await openEdit({ date: '2020-03-01' });
+
+    changeDate(window, form, '2020-03-08');
+    await submit(window, form);
+
+    expect(putBody(fetchImpl)).toBeNull();
+    expect(window.alert).toHaveBeenCalledWith(expect.stringMatching(/reschedule|next session/i));
+  });
+
+  it('sends the picked choice with the new date', async () => {
+    var { window, form, fetchImpl } = await openEdit({ date: '2020-03-01' });
+
+    changeDate(window, form, '2020-03-08');
+    form.querySelector('[name="dateChange"][value="next_session"]').checked = true;
+    await submit(window, form);
+
+    expect(putBody(fetchImpl)).toMatchObject({ date: '2020-03-08', dateChange: 'next_session' });
+  });
+
+  it('does not send dateChange when the date is unchanged', async () => {
+    var { window, form, fetchImpl } = await openEdit({ date: '2020-03-01' });
+
+    await submit(window, form);
+
+    expect(putBody(fetchImpl)).not.toHaveProperty('dateChange');
+  });
+
+  it('disables next session when the current session is still in the future', async () => {
+    var { window, form } = await openEdit({ date: '2999-03-01' });
+
+    changeDate(window, form, '2999-03-08');
+
+    expect(form.querySelector('[name="dateChange"][value="next_session"]').disabled).toBe(true);
+    expect(form.querySelector('[name="dateChange"][value="reschedule"]').disabled).toBe(false);
+  });
+});
