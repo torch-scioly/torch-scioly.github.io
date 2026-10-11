@@ -39,6 +39,8 @@ export async function onRequestPost({ request, env }) {
     endTime: addOneHour(body.startTime),
     school: body.school,
     program: body.program,
+    // SBE sessions are held at the school; everything else defaults to online.
+    inPerson: body.inPerson !== undefined ? Boolean(body.inPerson) : body.school === 'SBE',
   });
 
   await writeAuditLog(env.DB, {

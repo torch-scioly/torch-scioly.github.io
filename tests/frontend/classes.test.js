@@ -10,11 +10,20 @@ const CLASSES_JS_PATH = path.resolve(__dirname, '../../js/classes.js');
 const CLASSES_JS_SOURCE = fs.readFileSync(CLASSES_JS_PATH, 'utf-8');
 
 // classes.html's relevant markup (the elements js/classes.js reads by id/name).
-// Kept in sync with classes.html's #create-class-form, #creator-volunteer-fields,
-// #upcoming-classes and #past-classes.
+// Kept in sync with classes.html's #school-filter, #create-class-form,
+// #creator-volunteer-fields, #upcoming-classes and #past-classes.
 const CLASSES_HTML_FIXTURE = `
+  <select id="school-filter">
+    <option value="QVMS">QVMS — Science Olympiad</option>
+    <option value="SBE">SBE — Number Sense</option>
+  </select>
   <button id="show-create-form" class="btn btn-primary">+ Create a Class</button>
   <form id="create-class-form" class="signup-form" hidden>
+    <select name="school">
+      <option value="QVMS">QVMS — Science Olympiad</option>
+      <option value="SBE">SBE — Number Sense</option>
+    </select>
+    <label class="checkbox-label"><input type="checkbox" name="inPerson"></label>
     <input type="text" name="title" required>
     <textarea name="description"></textarea>
     <input type="date" name="date" required>
@@ -50,8 +59,8 @@ const CLASSES_HTML_FIXTURE = `
  * functions end up reachable as `window.loadClasses` etc., exactly as they
  * would in the real page.
  */
-function setupClassesPage({ fetchImpl, dateImpl } = {}) {
-  const window = new Window();
+function setupClassesPage({ fetchImpl, dateImpl, url } = {}) {
+  const window = new Window({ url: url || 'https://torch-scioly.github.io/classes.html' });
   const document = window.document;
   document.body.innerHTML = CLASSES_HTML_FIXTURE;
 
@@ -945,5 +954,131 @@ describe('js/classes.js SBE classes', () => {
     expect(document.getElementById('show-student-form')).toBeNull();
     expect(document.getElementById('student-roster')).toBeNull();
     expect(document.getElementById('show-volunteer-form')).not.toBeNull();
+  });
+});
+
+describe('js/classes.js school filter and in-person classes', () => {
+  var MIXED = [
+    { id: 1, title: 'Botany', date: '2999-01-04', start_time: '18:00', status: 'upcoming', school: 'QVMS', volunteers: [] },
+    { id: 2, title: 'Number Sense: squares', date: '2999-01-04', start_time: '15:45', status: 'upcoming', school: 'SBE', volunteers: [] },
+    { id: 3, title: 'Old Botany', date: '2000-01-04', start_time: '18:00', status: 'upcoming', volunteers: [] },
+  ];
+
+  function listFetch() {
+    return vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve(MIXED) }));
+  }
+
+  function titles(document, id) {
+    return Array.from(document.querySelectorAll('#' + id + ' h3')).map(function (h) { return h.textContent; });
+  }
+
+  it('shows QVMS classes by default (classes without a school count as QVMS)', async () => {
+    var { window, document } = setupClassesPage({ fetchImpl: listFetch() });
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await flushMicrotasks();
+
+    expect(titles(document, 'upcoming-classes')).toEqual(['Botany']);
+    expect(titles(document, 'past-classes')).toEqual(['Old Botany']);
+  });
+
+  it('switches to SBE classes from the dropdown', async () => {
+    var { window, document } = setupClassesPage({ fetchImpl: listFetch() });
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await flushMicrotasks();
+
+    var filter = document.getElementById('school-filter');
+    filter.value = 'SBE';
+    filter.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(titles(document, 'upcoming-classes')).toEqual(['Number Sense: squares']);
+    expect(titles(document, 'past-classes')).toEqual([]);
+  });
+
+  it('opens on SBE when linked with ?school=SBE', async () => {
+    var { window, document } = setupClassesPage({
+      fetchImpl: listFetch(),
+      url: 'https://torch-scioly.github.io/classes.html?school=SBE',
+    });
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await flushMicrotasks();
+
+    expect(document.getElementById('school-filter').value).toBe('SBE');
+    expect(titles(document, 'upcoming-classes')).toEqual(['Number Sense: squares']);
+  });
+
+  it('new classes default to the selected school, and SBE defaults to in person', async () => {
+    var fetchImpl = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) }));
+    var { window, document } = setupClassesPage({ fetchImpl });
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await flushMicrotasks();
+
+    var filter = document.getElementById('school-filter');
+    filter.value = 'SBE';
+    filter.dispatchEvent(new window.Event('change', { bubbles: true }));
+    var form = document.getElementById('create-class-form');
+    expect(form.querySelector('[name="school"]').value).toBe('SBE');
+    expect(form.querySelector('[name="inPerson"]').checked).toBe(true);
+
+    form.querySelector('[name="title"]').value = 'Number Sense: cubes';
+    form.querySelector('[name="date"]').value = '2999-01-11';
+    form.querySelector('[name="startTime"]').value = '15:45';
+    form.querySelector('[name="signUpAsVolunteer"]').checked = false;
+    fetchImpl.mockClear();
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await flushMicrotasks();
+
+    var body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(body).toMatchObject({ school: 'SBE', program: 'Number Sense', inPerson: true });
+  });
+
+  it('choosing QVMS in the create form defaults to online', async () => {
+    var { window, document } = setupClassesPage({ fetchImpl: listFetch() });
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    var form = document.getElementById('create-class-form');
+    var school = form.querySelector('[name="school"]');
+
+    school.value = 'SBE';
+    school.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(form.querySelector('[name="inPerson"]').checked).toBe(true);
+    school.value = 'QVMS';
+    school.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(form.querySelector('[name="inPerson"]').checked).toBe(false);
+  });
+
+  it('in-person class details show the location instead of a Zoom link', async () => {
+    var detail = makeClassDetail({ school: 'SBE', in_person: 1, zoom_link: null, students: [] });
+    var { window, document } = setupClassesPage({ fetchImpl: makeFetchRouter(detail) });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    var body = document.getElementById('class-detail-body').textContent;
+    expect(body).toContain('In person at Sonal Bhuchar Elementary');
+    expect(body).not.toContain('Zoom link will be posted');
+  });
+
+  it('edit form hides the Zoom fields while In person is checked and saves the choice', async () => {
+    var detail = makeClassDetail({ in_person: 1 });
+    var fetchImpl = makeFetchRouter(detail);
+    var { window, document } = setupClassesPage({ fetchImpl });
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    var form = document.getElementById('edit-class-form');
+    var inPerson = form.querySelector('[name="in_person"]');
+    var zoomFields = document.getElementById('edit-zoom-fields');
+    expect(inPerson.checked).toBe(true);
+    expect(zoomFields.hidden).toBe(true);
+
+    inPerson.checked = false;
+    inPerson.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(zoomFields.hidden).toBe(false);
+
+    fetchImpl.mockClear();
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await flushMicrotasks();
+    var put = fetchImpl.mock.calls.find(function (c) { return c[1] && c[1].method === 'PUT'; });
+    expect(JSON.parse(put[1].body).in_person).toBe(false);
   });
 });

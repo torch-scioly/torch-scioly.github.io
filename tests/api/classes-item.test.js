@@ -193,3 +193,17 @@ describe('DELETE /api/classes/:id', () => {
     expect(stillThere.status).toBe(200);
   });
 });
+
+describe('PUT /api/classes/:id — in person', () => {
+  it('switches a class between in person and online', async () => {
+    const cls = await createFixtureClass({ title: 'Toggle' });
+    const put = (body) => onRequestPut({
+      request: new Request('https://example.com', { method: 'PUT', body: JSON.stringify(body) }),
+      env,
+      params: { id: String(cls.id) },
+    });
+
+    expect((await (await put({ in_person: true })).json()).in_person).toBe(1);
+    expect((await (await put({ in_person: false })).json()).in_person).toBe(0);
+  });
+});

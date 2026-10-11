@@ -41,10 +41,28 @@
   </div>
 
   <section class="section">
+    <div class="school-filter-bar">
+      <label for="school-filter">Show classes for</label>
+      <select id="school-filter">
+        <option value="QVMS">QVMS &mdash; Science Olympiad</option>
+        <option value="SBE">SBE &mdash; Number Sense</option>
+      </select>
+    </div>
+
     <button id="show-create-form" class="btn btn-primary">+ Create a Class</button>
 
     <form id="create-class-form" class="signup-form" hidden>
       <h3>New Class</h3>
+      <label>School
+        <select name="school">
+          <option value="QVMS">QVMS &mdash; Science Olympiad</option>
+          <option value="SBE">SBE &mdash; Number Sense</option>
+        </select>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="inPerson">
+        In person (no Zoom link)
+      </label>
       <label>Title
         <input type="text" name="title" required>
       </label>

@@ -1,11 +1,14 @@
-export async function createClass(db, { title, description, date, startTime, endTime, school, program }) {
+export async function createClass(db, { title, description, date, startTime, endTime, school, program, inPerson }) {
   return db
     .prepare(
-      `INSERT INTO classes (title, description, date, start_time, end_time, school, program)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO classes (title, description, date, start_time, end_time, school, program, in_person)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
-    .bind(title, description ?? null, date, startTime, endTime ?? null, school ?? 'QVMS', program ?? 'Science Olympiad')
+    .bind(
+      title, description ?? null, date, startTime, endTime ?? null,
+      school ?? 'QVMS', program ?? 'Science Olympiad', inPerson ? 1 : 0
+    )
     .first();
 }
 
@@ -106,13 +109,13 @@ export async function removeStudentSignup(db, id) {
 export async function copyClassSession(db, cls) {
   const copy = await db
     .prepare(
-      `INSERT INTO classes (title, description, date, start_time, end_time, zoom_link, zoom_notes, status, school, program)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO classes (title, description, date, start_time, end_time, zoom_link, zoom_notes, status, school, program, in_person)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
     .bind(
       cls.title, cls.description, cls.date, cls.start_time, cls.end_time,
-      cls.zoom_link, cls.zoom_notes, cls.status, cls.school, cls.program
+      cls.zoom_link, cls.zoom_notes, cls.status, cls.school, cls.program, cls.in_person
     )
     .first();
 

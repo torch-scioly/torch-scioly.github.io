@@ -153,3 +153,25 @@ describe('classes school and program', () => {
     expect(listed.volunteers).toEqual([{ id: expect.any(Number), name: 'Jairam', role_note: 'Teach: ×11' }]);
   });
 });
+
+describe('in-person classes', () => {
+  async function create(body) {
+    return (await onRequestPost({
+      request: jsonRequest({ title: 'IP', date: '2026-11-09', startTime: '15:45', ...body }),
+      env,
+    })).json();
+  }
+
+  it('makes SBE classes in person by default', async () => {
+    expect((await create({ school: 'SBE', program: 'Number Sense' })).in_person).toBe(1);
+  });
+
+  it('makes QVMS classes online by default', async () => {
+    expect((await create({})).in_person).toBe(0);
+  });
+
+  it('honours an explicit inPerson choice', async () => {
+    expect((await create({ inPerson: true })).in_person).toBe(1);
+    expect((await create({ school: 'SBE', inPerson: false })).in_person).toBe(0);
+  });
+});

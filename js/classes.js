@@ -1,11 +1,47 @@
 var API_BASE = 'https://torch-signups.pages.dev';
 
+// Schools TORCH runs classes for, and the program each one runs.
+var SCHOOL_INFO = {
+  QVMS: { name: 'Quail Valley Middle School', program: 'Science Olympiad' },
+  SBE: { name: 'Sonal Bhuchar Elementary', program: 'Number Sense' },
+};
+
+function selectedSchool() {
+  var filter = document.getElementById('school-filter');
+  return filter && SCHOOL_INFO[filter.value] ? filter.value : 'QVMS';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   var showFormBtn = document.getElementById('show-create-form');
   var createForm = document.getElementById('create-class-form');
   var cancelFormBtn = document.getElementById('cancel-create-form');
   var volunteerCheckbox = createForm ? createForm.querySelector('[name="signUpAsVolunteer"]') : null;
   var creatorFields = document.getElementById('creator-volunteer-fields');
+  var schoolFilter = document.getElementById('school-filter');
+  var createSchool = createForm ? createForm.querySelector('[name="school"]') : null;
+  var createInPerson = createForm ? createForm.querySelector('[name="inPerson"]') : null;
+
+  // New classes default to in person for SBE (held at the school) and online otherwise.
+  var setCreateSchool = function (school) {
+    if (!createSchool) return;
+    createSchool.value = school;
+    if (createInPerson) createInPerson.checked = school === 'SBE';
+  };
+  if (createSchool) {
+    createSchool.addEventListener('change', function () {
+      setCreateSchool(createSchool.value);
+    });
+  }
+
+  if (schoolFilter) {
+    var linked = new URLSearchParams(window.location.search).get('school');
+    if (linked && SCHOOL_INFO[linked]) schoolFilter.value = linked;
+    setCreateSchool(selectedSchool());
+    schoolFilter.addEventListener('change', function () {
+      setCreateSchool(selectedSchool());
+      loadClasses();
+    });
+  }
 
   if (showFormBtn && createForm) {
     showFormBtn.addEventListener('click', function () {
@@ -43,6 +79,11 @@ document.addEventListener('DOMContentLoaded', function () {
         volunteerName: formData.get('volunteerName'),
         volunteerEmail: formData.get('volunteerEmail'),
       };
+      if (createSchool) {
+        payload.school = createSchool.value;
+        payload.program = SCHOOL_INFO[createSchool.value].program;
+        payload.inPerson = Boolean(createInPerson && createInPerson.checked);
+      }
 
       fetch(API_BASE + '/api/classes', {
         method: 'POST',
@@ -55,6 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(function () {
           createForm.reset();
+          setCreateSchool(selectedSchool());
           createForm.hidden = true;
           showFormBtn.hidden = false;
           loadClasses();
@@ -95,6 +137,8 @@ function loadClasses() {
     })
     .then(function (classes) {
       var today = localToday();
+      var school = selectedSchool();
+      classes = classes.filter(function (c) { return (c.school || 'QVMS') === school; });
       var upcoming = classes.filter(function (c) { return c.status !== 'cancelled' && c.date >= today; });
       var past = classes.filter(function (c) { return c.status === 'cancelled' || c.date < today; });
 
@@ -186,7 +230,10 @@ function isSafeHttpUrl(value) {
 }
 
 function renderClassDetailHtml(cls) {
-  var zoomHtml = isSafeHttpUrl(cls.zoom_link)
+  var place = SCHOOL_INFO[cls.school || 'QVMS'];
+  var zoomHtml = cls.in_person
+    ? '<div class="zoom-box">&#128205; In person at ' + escapeHtml(place ? place.name : 'school') + '</div>'
+    : isSafeHttpUrl(cls.zoom_link)
     ? '<div class="zoom-box"><strong>Join here:</strong> ' +
       '<a href="' + escapeHtml(cls.zoom_link) + '" target="_blank" rel="noopener">' + escapeHtml(cls.zoom_link) + '</a>' +
       (cls.zoom_notes ? '<p>' + escapeHtml(cls.zoom_notes) + '</p>' : '') +
@@ -356,8 +403,12 @@ function renderEditClassSection(cls) {
       '</fieldset>' +
       '<label>Start Time<input type="time" name="startTime" step="900" value="' + escapeHtml(cls.start_time) + '" required></label>' +
       '<p class="class-meta">Classes run for a 1-hour window, starting on the hour or a 15-minute mark.</p>' +
-      '<label>Zoom Link<input type="url" name="zoom_link" value="' + escapeHtml(cls.zoom_link || '') + '"></label>' +
-      '<label>Zoom Notes<input type="text" name="zoom_notes" value="' + escapeHtml(cls.zoom_notes || '') + '"></label>' +
+      '<label class="checkbox-label"><input type="checkbox" name="in_person"' + (cls.in_person ? ' checked' : '') + '> ' +
+        'In person (no Zoom link)</label>' +
+      '<div id="edit-zoom-fields"' + (cls.in_person ? ' hidden' : '') + '>' +
+        '<label>Zoom Link<input type="url" name="zoom_link" value="' + escapeHtml(cls.zoom_link || '') + '"></label>' +
+        '<label>Zoom Notes<input type="text" name="zoom_notes" value="' + escapeHtml(cls.zoom_notes || '') + '"></label>' +
+      '</div>' +
       '<button type="submit" class="btn btn-primary">Save Changes</button>' +
     '</form>' +
     (cls.status === 'cancelled'
@@ -365,6 +416,11 @@ function renderEditClassSection(cls) {
       : '<button id="cancel-class-btn" class="btn btn-danger">Cancel This Class</button>');
 
   var editForm = document.getElementById('edit-class-form');
+  var inPersonBox = editForm.querySelector('[name="in_person"]');
+  var zoomFields = document.getElementById('edit-zoom-fields');
+  inPersonBox.addEventListener('change', function () {
+    zoomFields.hidden = inPersonBox.checked;
+  });
   var dateInput = editForm.querySelector('[name="date"]');
   var dateChoice = document.getElementById('date-change-choice');
   var dateChoiceRadios = editForm.querySelectorAll('[name="dateChange"]');
@@ -391,6 +447,7 @@ function renderEditClassSection(cls) {
       startTime: formData.get('startTime'),
       zoom_link: formData.get('zoom_link') || null,
       zoom_notes: formData.get('zoom_notes') || null,
+      in_person: inPersonBox.checked,
     };
     if (payload.date !== cls.date) {
       var choice = editForm.querySelector('[name="dateChange"]:checked');

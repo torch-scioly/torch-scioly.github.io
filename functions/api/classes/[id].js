@@ -13,6 +13,7 @@ const EDITABLE_FIELDS = {
   startTime: 'start_time',
   zoom_link: 'zoom_link',
   zoom_notes: 'zoom_notes',
+  in_person: 'in_person',
 };
 
 export async function onRequestGet({ env, params }) {
@@ -43,6 +44,8 @@ export async function onRequestPut({ request, env, params }) {
   if (Object.keys(fields).length === 0) {
     return Response.json({ error: 'No fields to update' }, { status: 400 });
   }
+
+  if ('in_person' in fields) fields.in_person = fields.in_person ? 1 : 0;
 
   if ('start_time' in fields) {
     if (!isQuarterHourTime(fields.start_time)) {
