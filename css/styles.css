@@ -1055,7 +1055,8 @@ img {
   opacity: 0.6;
 }
 
-.class-card .class-meta {
+.class-card .class-meta,
+.sbe-session .class-meta {
   color: var(--text-light);
   font-size: 0.9rem;
 }
