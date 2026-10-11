@@ -15,8 +15,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Floating banner dismiss
+  // Floating banner dismiss + upcoming classes
   initBanner();
+  fetchBannerClasses(todayIso());
 
   // Fetch and display GoatCounter stats
   fetchVisitorStats();
@@ -32,7 +33,66 @@ document.addEventListener('DOMContentLoaded', function () {
   animateStats();
 });
 
-// Floating tryout banner
+var BANNER_MAX_CLASSES = 6;
+var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function todayIso() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// "Rocks & Minerals — Sun, Oct 12 · 10:00 AM" for each upcoming, non-cancelled class, soonest first.
+function upcomingClassItems(classes, today) {
+  return classes
+    .filter(function (c) { return c.status !== 'cancelled' && c.date >= today; })
+    .sort(function (a, b) { return (a.date + a.start_time).localeCompare(b.date + b.start_time); })
+    .slice(0, BANNER_MAX_CLASSES)
+    .map(function (c) {
+      var parts = c.date.split('-').map(Number);
+      var day = new Date(parts[0], parts[1] - 1, parts[2]);
+      var time = c.start_time.split(':').map(Number);
+      var hour12 = time[0] % 12 || 12;
+      var when = DAY_NAMES[day.getDay()] + ', ' + MONTH_NAMES[day.getMonth()] + ' ' + day.getDate() +
+        ' \u00B7 ' + hour12 + ':' + String(time[1]).padStart(2, '0') + (time[0] < 12 ? ' AM' : ' PM');
+      return c.title + ' \u2014 ' + when;
+    });
+}
+
+// Fill the scrolling banner on every page with upcoming classes. Each .banner-text copy
+// gets the same content (two copies make the marquee loop seamless). Built with DOM
+// nodes so class titles are always rendered as text.
+function fetchBannerClasses(today) {
+  var copies = document.querySelectorAll('#tryout-banner .banner-text');
+  if (!copies.length) return;
+
+  fetch(API_BASE + '/api/classes')
+    .then(function (res) {
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    })
+    .then(function (classes) {
+      var items = upcomingClassItems(classes, today);
+      copies.forEach(function (copy) {
+        copy.textContent = '';
+        var heading = document.createElement('strong');
+        heading.textContent = '\u{1F4DA} UPCOMING CLASSES';
+        copy.appendChild(heading);
+        var text = items.length
+          ? items.join(' \u00A0\u2022\u00A0 ')
+          : 'New classes coming soon';
+        copy.appendChild(document.createTextNode(' \u00A0\u2022\u00A0 ' + text + ' \u00A0\u2022\u00A0 '));
+        var link = document.createElement('a');
+        link.href = 'classes.html';
+        link.textContent = items.length ? 'Sign up' : 'See the schedule';
+        copy.appendChild(link);
+        copy.appendChild(document.createTextNode(' \u00A0\u2022\u00A0 '));
+      });
+    })
+    .catch(function () {});
+}
+
+// Floating announcement banner
 function initBanner() {
   var banner = document.getElementById('tryout-banner');
   var closeBtn = document.getElementById('banner-close');
@@ -180,16 +240,20 @@ function countCardsInPage(url, marker, elId) {
     })
     .then(function (html) {
       var count = html.split(marker).length - 1;
-      if (count > 0) el.textContent = String(count);
+      if (count > 0) animateNumber(el, 0, count, 1200);
     })
     .catch(function () {});
 }
 
-// Animate a number from start to end
+// Animate a number from start to end. A newer animation on the same element
+// supersedes an older one, so a live value can't be overwritten by a stale count-up.
 function animateNumber(el, start, end, duration) {
   var startTime = null;
+  var token = {};
+  el._countUp = token;
 
   function step(timestamp) {
+    if (el._countUp !== token) return;
     if (!startTime) startTime = timestamp;
     var progress = Math.min((timestamp - startTime) / duration, 1);
     var eased = 1 - Math.pow(1 - progress, 3);

@@ -750,6 +750,11 @@ img {
   flex-shrink: 0;
 }
 
+.banner-text a {
+  color: #fff;
+  text-decoration: underline;
+}
+
 @keyframes scroll-left {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }

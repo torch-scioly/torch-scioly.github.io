@@ -185,6 +185,18 @@ describe('countCardsInPage', () => {
     expect(window.document.getElementById('courses-count').textContent).toBe('16');
   });
 
+  it('wins over a count-up animation already running on the same stat', async () => {
+    const fetchImpl = vi.fn(() => textResponse('<div class="course-details"></div>'.repeat(18)));
+    const window = setupPage(STATS_HTML, fetchImpl);
+    const el = window.document.getElementById('courses-count');
+
+    window.animateNumber(el, 0, 15, 1500); // the on-scroll count-up of the static number
+    window.countCardsInPage('courses.html', 'class="course-details"', 'courses-count');
+    await flush();
+
+    expect(el.textContent).toBe('18');
+  });
+
   it('keeps the static number if the page cannot be fetched', async () => {
     const window = setupPage(STATS_HTML);
 
@@ -192,5 +204,93 @@ describe('countCardsInPage', () => {
     await flush();
 
     expect(window.document.getElementById('courses-count').textContent).toBe('15');
+  });
+});
+
+describe('upcoming classes banner', () => {
+  const BANNER_HTML = `
+    <div class="floating-banner" id="tryout-banner">
+      <div class="banner-scroll">
+        <span class="banner-text">fallback</span>
+        <span class="banner-text">fallback</span>
+      </div>
+    </div>`;
+
+  const CLASSES = [
+    { id: 1, title: 'Old Class', date: '2026-10-01', start_time: '10:00', status: 'upcoming' },
+    { id: 2, title: 'Solar System', date: '2026-10-12', start_time: '11:00', status: 'upcoming' },
+    { id: 3, title: 'Rocks & Minerals', date: '2026-10-12', start_time: '10:00', status: 'upcoming' },
+    { id: 4, title: 'Cancelled One', date: '2026-10-13', start_time: '10:00', status: 'cancelled' },
+    { id: 5, title: 'Meteorology', date: '2026-10-18', start_time: '18:30', status: 'upcoming' },
+  ];
+
+  it('lists upcoming, non-cancelled classes soonest first with day and 12-hour time', () => {
+    const window = setupPage('');
+
+    const items = window.upcomingClassItems(CLASSES, '2026-10-11');
+
+    expect(Array.from(items)).toEqual([
+      'Rocks & Minerals — Mon, Oct 12 · 10:00 AM',
+      'Solar System — Mon, Oct 12 · 11:00 AM',
+      'Meteorology — Sun, Oct 18 · 6:30 PM',
+    ]);
+  });
+
+  it('caps the banner at six classes', () => {
+    const window = setupPage('');
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      id: i, title: 'C' + i, date: '2026-10-2' + i, start_time: '10:00', status: 'upcoming',
+    }));
+
+    expect(window.upcomingClassItems(many, '2026-10-11')).toHaveLength(6);
+  });
+
+  it('fills every banner copy with the classes and a sign-up link', async () => {
+    const fetchImpl = vi.fn(() => jsonResponse(CLASSES));
+    const window = setupPage(BANNER_HTML, fetchImpl);
+
+    window.fetchBannerClasses('2026-10-11');
+    await flush();
+
+    expect(fetchImpl).toHaveBeenCalledWith('https://torch-signups.pages.dev/api/classes');
+    const copies = window.document.querySelectorAll('.banner-text');
+    expect(copies).toHaveLength(2);
+    copies.forEach((copy) => {
+      expect(copy.textContent).toContain('UPCOMING CLASSES');
+      expect(copy.textContent).toContain('Rocks & Minerals');
+      expect(copy.textContent).not.toContain('Cancelled One');
+      expect(copy.querySelector('a').getAttribute('href')).toBe('classes.html');
+    });
+  });
+
+  it('renders class titles as text, not HTML', async () => {
+    const fetchImpl = vi.fn(() =>
+      jsonResponse([{ id: 1, title: '<img src=x onerror=alert(1)>', date: '2026-10-12', start_time: '10:00', status: 'upcoming' }])
+    );
+    const window = setupPage(BANNER_HTML, fetchImpl);
+
+    window.fetchBannerClasses('2026-10-11');
+    await flush();
+
+    expect(window.document.querySelector('.banner-text img')).toBeNull();
+    expect(window.document.querySelector('.banner-text').textContent).toContain('<img');
+  });
+
+  it('says new classes are coming soon when nothing is scheduled', async () => {
+    const window = setupPage(BANNER_HTML, vi.fn(() => jsonResponse([])));
+
+    window.fetchBannerClasses('2026-10-11');
+    await flush();
+
+    expect(window.document.querySelector('.banner-text').textContent).toMatch(/coming soon/i);
+  });
+
+  it('keeps the static banner when classes cannot be loaded', async () => {
+    const window = setupPage(BANNER_HTML);
+
+    window.fetchBannerClasses('2026-10-11');
+    await flush();
+
+    expect(window.document.querySelector('.banner-text').textContent).toBe('fallback');
   });
 });
