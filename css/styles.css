@@ -85,8 +85,11 @@ img {
   text-decoration: none;
 }
 
-.nav-logo .logo-icon {
-  font-size: 1.5rem;
+.nav-logo .logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #fff;
 }
 
 .nav-links {
@@ -1134,4 +1137,57 @@ img {
   padding: 0.5rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
+}
+
+/* ===== SBE Number Sense ===== */
+.sbe-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sbe-session {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.sbe-session.cancelled {
+  opacity: 0.6;
+  border-left-color: var(--border);
+}
+
+.sbe-when {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+.sbe-session h3 {
+  margin: 0 0 0.5rem;
+  color: var(--primary);
+}
+
+.sbe-curriculum {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.sbe-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.sbe-roster li {
+  padding: 0.2rem 0;
+}
+
+.class-card .school-badge {
+  float: right;
 }

@@ -1,11 +1,11 @@
-export async function createClass(db, { title, description, date, startTime, endTime }) {
+export async function createClass(db, { title, description, date, startTime, endTime, school, program }) {
   return db
     .prepare(
-      `INSERT INTO classes (title, description, date, start_time, end_time)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO classes (title, description, date, start_time, end_time, school, program)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
-    .bind(title, description ?? null, date, startTime, endTime ?? null)
+    .bind(title, description ?? null, date, startTime, endTime ?? null, school ?? 'QVMS', program ?? 'Science Olympiad')
     .first();
 }
 
@@ -13,7 +13,7 @@ export async function listClasses(db) {
   const { results } = await db
     .prepare(
       `SELECT c.*,
-              (SELECT json_group_array(json_object('id', v.id, 'name', v.name))
+              (SELECT json_group_array(json_object('id', v.id, 'name', v.name, 'role_note', v.role_note))
                  FROM volunteer_signups v WHERE v.class_id = c.id) AS volunteers_json
        FROM classes c
        ORDER BY c.date ASC, c.start_time ASC`
@@ -106,11 +106,14 @@ export async function removeStudentSignup(db, id) {
 export async function copyClassSession(db, cls) {
   const copy = await db
     .prepare(
-      `INSERT INTO classes (title, description, date, start_time, end_time, zoom_link, zoom_notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO classes (title, description, date, start_time, end_time, zoom_link, zoom_notes, status, school, program)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
-    .bind(cls.title, cls.description, cls.date, cls.start_time, cls.end_time, cls.zoom_link, cls.zoom_notes, cls.status)
+    .bind(
+      cls.title, cls.description, cls.date, cls.start_time, cls.end_time,
+      cls.zoom_link, cls.zoom_notes, cls.status, cls.school, cls.program
+    )
     .first();
 
   await db

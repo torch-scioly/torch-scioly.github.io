@@ -122,6 +122,7 @@ function renderClassList(container, classes) {
     var card = document.createElement('div');
     card.className = 'class-card' + (cls.status === 'cancelled' ? ' cancelled' : '');
     card.innerHTML =
+      (cls.school === 'SBE' ? '<span class="badge badge-orange school-badge">SBE</span>' : '') +
       '<h3>' + escapeHtml(cls.title) + '</h3>' +
       '<p class="class-meta">' + escapeHtml(cls.date) + ' &middot; ' + escapeHtml(cls.start_time) +
       (cls.end_time ? '&ndash;' + escapeHtml(cls.end_time) : '') + '</p>' +
@@ -217,17 +218,19 @@ function renderClassDetailHtml(cls) {
       '<button type="submit" class="btn btn-primary">Add yourself</button>' +
       '<button type="button" id="cancel-volunteer-form" class="btn btn-secondary">Cancel</button>' +
     '</form>' +
-    '<h3>Students</h3>' +
-    '<ul class="roster-list" id="student-roster">' + studentsHtml + '</ul>' +
-    '<button id="show-student-form" class="btn btn-secondary">+ Sign up as a student</button>' +
-    '<form id="add-student-form" class="signup-form" hidden>' +
-      '<label>Student name<input type="text" name="studentName" required></label>' +
-      '<label>Grade<input type="text" name="grade"></label>' +
-      '<label>Parent name<input type="text" name="parentName" required></label>' +
-      '<label>Parent email<input type="email" name="parentEmail" required></label>' +
-      '<button type="submit" class="btn btn-primary">Add student</button>' +
-      '<button type="button" id="cancel-student-form" class="btn btn-secondary">Cancel</button>' +
-    '</form>' +
+    // SBE sessions are for elementary students, who don't sign up online.
+    (cls.school === 'SBE' ? '' :
+      '<h3>Students</h3>' +
+      '<ul class="roster-list" id="student-roster">' + studentsHtml + '</ul>' +
+      '<button id="show-student-form" class="btn btn-secondary">+ Sign up as a student</button>' +
+      '<form id="add-student-form" class="signup-form" hidden>' +
+        '<label>Student name<input type="text" name="studentName" required></label>' +
+        '<label>Grade<input type="text" name="grade"></label>' +
+        '<label>Parent name<input type="text" name="parentName" required></label>' +
+        '<label>Parent email<input type="email" name="parentEmail" required></label>' +
+        '<button type="submit" class="btn btn-primary">Add student</button>' +
+        '<button type="button" id="cancel-student-form" class="btn btn-secondary">Cancel</button>' +
+      '</form>') +
     '<div id="edit-class-section"></div>'
   );
 }

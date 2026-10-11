@@ -236,6 +236,17 @@ describe('upcoming classes banner', () => {
     ]);
   });
 
+  it('prefixes SBE sessions so they are distinguishable', () => {
+    const window = setupPage('');
+
+    const items = window.upcomingClassItems(
+      [{ id: 9, title: 'Number Sense: squares ending in 5', date: '2026-10-26', start_time: '15:45', status: 'upcoming', school: 'SBE' }],
+      '2026-10-11'
+    );
+
+    expect(items[0]).toBe('SBE \u00b7 Number Sense: squares ending in 5 \u2014 Mon, Oct 26 \u00b7 3:45 PM');
+  });
+
   it('caps the banner at six classes', () => {
     const window = setupPage('');
     const many = Array.from({ length: 9 }, (_, i) => ({

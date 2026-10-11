@@ -85,7 +85,7 @@ describe('POST /api/classes', () => {
 
     const list = await (await onRequestGet({ env })).json();
     const found = list.find((c) => c.title === 'Astronomy');
-    expect(found.volunteers).toEqual([{ id: expect.any(Number), name: 'Priya' }]);
+    expect(found.volunteers).toEqual([{ id: expect.any(Number), name: 'Priya', role_note: null }]);
   });
 
   it('signs the creator up as a volunteer when requested', async () => {
@@ -108,5 +108,48 @@ describe('POST /api/classes', () => {
 
     const log = await listAuditLog(env.DB);
     expect(log.some((entry) => entry.entity_type === 'volunteer_signup')).toBe(true);
+  });
+});
+
+describe('classes school and program', () => {
+  async function create(body) {
+    return onRequestPost({
+      request: jsonRequest({ title: 'T', date: '2026-11-02', startTime: '15:45', ...body }),
+      env,
+    });
+  }
+
+  it('defaults new classes to QVMS Science Olympiad', async () => {
+    const body = await (await create({ title: 'Default School' })).json();
+
+    expect(body.school).toBe('QVMS');
+    expect(body.program).toBe('Science Olympiad');
+  });
+
+  it('creates an SBE Number Sense class', async () => {
+    const body = await (await create({ title: 'SBE Monday', school: 'SBE', program: 'Number Sense' })).json();
+
+    expect(body.school).toBe('SBE');
+    expect(body.program).toBe('Number Sense');
+  });
+
+  it('rejects an unknown school', async () => {
+    const response = await create({ school: 'Nowhere High' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('lists school, program, and each volunteer role', async () => {
+    const created = await (await create({ title: 'Roles Listed', school: 'SBE', program: 'Number Sense' })).json();
+    await env.DB.prepare(
+      `INSERT INTO volunteer_signups (class_id, name, email, role_note) VALUES (?, 'Jairam', 'j@example.com', 'Teach: ×11')`
+    ).bind(created.id).run();
+
+    const list = await (await onRequestGet({ env })).json();
+    const listed = list.find((c) => c.id === created.id);
+
+    expect(listed.school).toBe('SBE');
+    expect(listed.program).toBe('Number Sense');
+    expect(listed.volunteers).toEqual([{ id: expect.any(Number), name: 'Jairam', role_note: 'Teach: ×11' }]);
   });
 });

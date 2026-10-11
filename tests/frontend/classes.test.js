@@ -919,3 +919,31 @@ describe('js/classes.js edit form — reschedule vs next session', () => {
     expect(form.querySelector('[name="dateChange"][value="reschedule"]').disabled).toBe(false);
   });
 });
+
+describe('js/classes.js SBE classes', () => {
+  it('marks SBE classes with a badge in the class list', () => {
+    var { window, document } = setupClassesPage();
+    var container = document.getElementById('upcoming-classes');
+
+    window.renderClassList(container, [
+      { id: 1, title: 'Number Sense', date: '2026-10-19', start_time: '15:45', end_time: '16:45', status: 'upcoming', school: 'SBE', volunteers: [] },
+      { id: 2, title: 'Botany', date: '2026-10-20', start_time: '18:00', end_time: '19:00', status: 'upcoming', school: 'QVMS', volunteers: [] },
+    ]);
+
+    var cards = container.querySelectorAll('.class-card');
+    expect(cards[0].querySelector('.school-badge').textContent).toBe('SBE');
+    expect(cards[1].querySelector('.school-badge')).toBeNull();
+  });
+
+  it('has no student sign-up in the detail view of an SBE class', async () => {
+    var detail = makeClassDetail({ school: 'SBE', students: [] });
+    var { window, document } = setupClassesPage({ fetchImpl: makeFetchRouter(detail) });
+
+    window.openClassDetail(42);
+    await flushMicrotasks();
+
+    expect(document.getElementById('show-student-form')).toBeNull();
+    expect(document.getElementById('student-roster')).toBeNull();
+    expect(document.getElementById('show-volunteer-form')).not.toBeNull();
+  });
+});

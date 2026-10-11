@@ -41,7 +41,7 @@ describe('classes', () => {
     const all = await listClasses(env.DB);
     const found = all.find((c) => c.id === cls.id);
 
-    expect(found.volunteers).toEqual([{ id: signup.id, name: 'Jairam' }]);
+    expect(found.volunteers).toEqual([{ id: signup.id, name: 'Jairam', role_note: null }]);
   });
 
   it('returns an empty volunteers array for a class with no signups', async () => {

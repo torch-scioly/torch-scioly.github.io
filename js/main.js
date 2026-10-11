@@ -55,7 +55,7 @@ function upcomingClassItems(classes, today) {
       var hour12 = time[0] % 12 || 12;
       var when = DAY_NAMES[day.getDay()] + ', ' + MONTH_NAMES[day.getMonth()] + ' ' + day.getDate() +
         ' \u00B7 ' + hour12 + ':' + String(time[1]).padStart(2, '0') + (time[0] < 12 ? ' AM' : ' PM');
-      return c.title + ' \u2014 ' + when;
+      return (c.school === 'SBE' ? 'SBE \u00B7 ' : '') + c.title + ' \u2014 ' + when;
     });
 }
 
@@ -117,6 +117,7 @@ var GC_PAGE_GROUPS = [
   ['/', '/index.html'],
   ['/courses.html'],
   ['/classes.html'],
+  ['/sbe.html'],
   ['/volunteers.html'],
   ['/events.html'],
   ['/results.html']

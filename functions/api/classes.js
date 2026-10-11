@@ -2,6 +2,9 @@ import { createClass, listClasses, addVolunteerSignup } from './_lib/db.js';
 import { writeAuditLog } from './_lib/audit.js';
 import { isQuarterHourTime, addOneHour } from './_lib/time.js';
 
+const SCHOOLS = ['QVMS', 'SBE'];
+const PROGRAMS = ['Science Olympiad', 'Number Sense'];
+
 export async function onRequestGet({ env }) {
   const classes = await listClasses(env.DB);
   return Response.json(classes);
@@ -21,12 +24,21 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
+  if (body.school !== undefined && !SCHOOLS.includes(body.school)) {
+    return Response.json({ error: `school must be one of: ${SCHOOLS.join(', ')}` }, { status: 400 });
+  }
+  if (body.program !== undefined && !PROGRAMS.includes(body.program)) {
+    return Response.json({ error: `program must be one of: ${PROGRAMS.join(', ')}` }, { status: 400 });
+  }
+
   const newClass = await createClass(env.DB, {
     title: body.title,
     description: body.description,
     date: body.date,
     startTime: body.startTime,
     endTime: addOneHour(body.startTime),
+    school: body.school,
+    program: body.program,
   });
 
   await writeAuditLog(env.DB, {
