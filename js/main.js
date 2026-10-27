@@ -45,7 +45,7 @@ function todayIso() {
 // "Rocks & Minerals — Sun, Oct 12 · 10:00 AM" for each upcoming, non-cancelled class, soonest first.
 function upcomingClassItems(classes, today) {
   return classes
-    .filter(function (c) { return c.status !== 'cancelled' && c.date >= today; })
+    .filter(function (c) { return c.status !== 'cancelled' && c.date >= today && c.program !== 'Volunteering'; })
     .sort(function (a, b) { return (a.date + a.start_time).localeCompare(b.date + b.start_time); })
     .slice(0, BANNER_MAX_CLASSES)
     .map(function (c) {

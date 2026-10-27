@@ -3,7 +3,8 @@ import { writeAuditLog } from './_lib/audit.js';
 import { isQuarterHourTime, addOneHour } from './_lib/time.js';
 
 const SCHOOLS = ['QVMS', 'SBE'];
-const PROGRAMS = ['Science Olympiad', 'Number Sense'];
+// 'Volunteering' sessions (testing, TMSCA meets) are volunteer-only: no student sign-up.
+const PROGRAMS = ['Science Olympiad', 'Number Sense', 'Volunteering'];
 
 export async function onRequestGet({ env }) {
   const classes = await listClasses(env.DB);

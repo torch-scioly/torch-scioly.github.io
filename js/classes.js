@@ -167,9 +167,10 @@ function renderClassList(container, classes) {
     card.className = 'class-card' + (cls.status === 'cancelled' ? ' cancelled' : '');
     card.innerHTML =
       (cls.school === 'SBE' ? '<span class="badge badge-orange school-badge">SBE</span>' : '') +
+      (cls.program === 'Volunteering' ? '<span class="badge badge-orange school-badge">Volunteering</span>' : '') +
       '<h3>' + escapeHtml(cls.title) + '</h3>' +
-      '<p class="class-meta">' + escapeHtml(cls.date) + ' &middot; ' + escapeHtml(cls.start_time) +
-      (cls.end_time ? '&ndash;' + escapeHtml(cls.end_time) : '') + '</p>' +
+      '<p class="class-meta">' + escapeHtml(cls.date) + ' &middot; ' + escapeHtml(timeText(cls)) +
+      (cls.start_time && cls.end_time ? '&ndash;' + escapeHtml(cls.end_time) : '') + '</p>' +
       volunteersHtml +
       (cls.status === 'cancelled' ? '<p class="class-meta">Cancelled</p>' : '');
     card.querySelectorAll('a').forEach(function (link) {
@@ -182,6 +183,11 @@ function renderClassList(container, classes) {
     });
     container.appendChild(card);
   });
+}
+
+// Volunteer-only sessions may not have a start time yet.
+function timeText(cls) {
+  return cls.start_time ? cls.start_time : 'Time TBD';
 }
 
 function volunteerLinkHtml(volunteer) {
@@ -252,7 +258,7 @@ function renderClassDetailHtml(cls) {
 
   return (
     '<h2>' + escapeHtml(cls.title) + '</h2>' +
-    '<p class="class-meta">' + escapeHtml(cls.date) + ' at ' + escapeHtml(cls.start_time) + '</p>' +
+    '<p class="class-meta">' + escapeHtml(cls.date) + ' at ' + escapeHtml(timeText(cls)) + '</p>' +
     '<p>' + escapeHtml(cls.description || '') + '</p>' +
     zoomHtml +
     '<h3>Volunteers</h3>' +
@@ -265,8 +271,9 @@ function renderClassDetailHtml(cls) {
       '<button type="submit" class="btn btn-primary">Add yourself</button>' +
       '<button type="button" id="cancel-volunteer-form" class="btn btn-secondary">Cancel</button>' +
     '</form>' +
-    // SBE sessions are for elementary students, who don't sign up online.
-    (cls.school === 'SBE' ? '' :
+    // SBE sessions are for elementary students, who don't sign up online; volunteer-only
+    // sessions have no students.
+    (cls.school === 'SBE' || cls.program === 'Volunteering' ? '' :
       '<h3>Students</h3>' +
       '<ul class="roster-list" id="student-roster">' + studentsHtml + '</ul>' +
       '<button id="show-student-form" class="btn btn-secondary">+ Sign up as a student</button>' +

@@ -47,7 +47,7 @@ function loadSbeSessions(today) {
       return res.json();
     })
     .then(function (classes) {
-      var sbe = classes.filter(function (c) { return c.school === 'SBE'; });
+      var sbe = classes.filter(function (c) { return c.school === 'SBE' && c.program === 'Number Sense'; });
       var byDate = function (a, b) { return (a.date + a.start_time).localeCompare(b.date + b.start_time); };
       var upcoming = sbe.filter(function (c) { return c.date >= today; }).sort(byDate);
       var past = sbe.filter(function (c) { return c.date < today && c.status !== 'cancelled'; }).sort(byDate).reverse();
