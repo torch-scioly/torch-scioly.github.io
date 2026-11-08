@@ -1248,3 +1248,16 @@ img {
   body.print-parent-link > *:not(section) { display: none !important; }
   body.print-parent-link #parent-link-box button { display: none; }
 }
+.ta-errors { background: #fff5f5; border: 1px solid #f3c0c0; border-radius: 8px; padding: 0.6rem 0.9rem; }
+.ta-ok { color: #1e7b34; font-weight: 600; }
+.ta-table-wrap { overflow-x: auto; margin: 0.75rem 0; }
+.ta-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.ta-table th, .ta-table td { border: 1px solid #e3e8ee; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
+.ta-toggle { font-weight: normal; margin-right: 1rem; }
+.ta-toggle input { width: auto; }
+.ta-actions { margin-top: 0.6rem; }
+.ta-code { font-size: 2.6rem; font-weight: 800; letter-spacing: 0.3rem; color: var(--primary); }
+.ta-answer { border-top: 1px solid #eef1f4; padding: 0.5rem 0; }
+.ta-answer.needs_volunteer { background: #fffbea; }
+.ta-grade { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.ta-grade input { width: auto; padding: 0.3rem; }
