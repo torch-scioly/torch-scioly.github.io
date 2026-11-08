@@ -118,6 +118,7 @@ var GC_PAGE_GROUPS = [
   ['/courses.html'],
   ['/classes.html'],
   ['/sbe.html'],
+  ['/tests.html'],
   ['/volunteers.html'],
   ['/events.html'],
   ['/results.html']
