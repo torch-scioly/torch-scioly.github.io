@@ -206,7 +206,7 @@ SBE Number Sense (TMSCA-style scoring) is out of scope for now.
 
 **In the pilot:** parent registration + consent + parent link + PIN reset; kid sign-in; taking a
 test at home and with a session code; auto-grading of all five question types (written answers
-by Claude); kid review screen with "What to study next" (resources seeded in a migration, no
+by Cloudflare Workers AI); kid review screen with "What to study next" (resources seeded in a migration, no
 editing screen yet); xlsx upload with preview/validation; volunteer/head-coach results and
 score overrides. **For the pilot, staff use the existing shared admin password** instead of staff
 links, since a handful of trusted volunteers run it.
