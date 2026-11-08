@@ -15,7 +15,7 @@ export async function onRequest({ request, next }) {
       headers: {
         'Access-Control-Allow-Origin': allowOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Parent-Key',
         'Access-Control-Allow-Credentials': 'true',
         Vary: 'Origin',
       },
