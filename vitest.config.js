@@ -12,11 +12,11 @@ export default defineWorkersConfig(async () => {
       // Frontend DOM tests run under tests/frontend/** in a separate happy-dom
       // project (see vitest.frontend.config.js / vitest.workspace.js) — the
       // workerd/miniflare runtime here has no `document`/`window` or Node `vm`.
-      exclude: [...configDefaults.exclude, 'tests/frontend/**'],
+      exclude: [...configDefaults.exclude, 'tests/frontend/**', '.claude/**'],
       setupFiles: ['./tests/apply-migrations.js'],
       poolOptions: {
         workers: {
-          wrangler: { configPath: './wrangler.toml' },
+          wrangler: { configPath: './tests/wrangler.test.toml' },
           miniflare: {
             bindings: {
               TEST_MIGRATIONS: migrations,

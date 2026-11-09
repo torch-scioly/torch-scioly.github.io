@@ -1,8 +1,8 @@
 import { createClass, listClasses, addVolunteerSignup } from './_lib/db.js';
 import { writeAuditLog } from './_lib/audit.js';
 import { isQuarterHourTime, addOneHour } from './_lib/time.js';
+import { SCHOOLS } from './_lib/schools.js';
 
-const SCHOOLS = ['QVMS', 'SBE'];
 // 'Volunteering' sessions (testing, TMSCA meets) are volunteer-only: no student sign-up.
 const PROGRAMS = ['Science Olympiad', 'Number Sense', 'Volunteering'];
 

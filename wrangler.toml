@@ -7,3 +7,7 @@ pages_build_output_dir = "."
 binding = "DB"
 database_name = "torch-signups"
 database_id = "30664827-7b33-4a3a-a814-c1487bbc699f"
+
+# Workers AI grades written answers on the Tests page.
+[ai]
+binding = "AI"

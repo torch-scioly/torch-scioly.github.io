@@ -11,3 +11,8 @@ export function addOneHour(startTime) {
   const endMinutes = String(totalMinutes % 60).padStart(2, '0');
   return `${endHours}:${endMinutes}`;
 }
+
+// SQLite datetime('now') strings ("2026-11-08 15:04:05", UTC) as ISO 8601 for the browser.
+export function sqliteToIso(value) {
+  return value ? `${value.replace(' ', 'T')}Z` : null;
+}
