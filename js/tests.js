@@ -415,17 +415,20 @@ function renderTake(container, attempt, opts) {
   opts = opts || {};
   var debounceMs = opts.debounceMs === undefined ? 800 : opts.debounceMs;
   var tickMs = opts.tickMs || 1000;
+  var retryMs = opts.retryMs || 5000;
   var onSubmitted = opts.onSubmitted || function () {};
   var timers = {};
-  var pending = [];
-  var submitted = false;
+  var dirty = {}; // question id -> true until the server has the latest answer
+  var submitState = 'open'; // open | submitting | retrying | done
   var deadline = attempt.deadlineAt ? new Date(attempt.deadlineAt).getTime() : null;
   var interval = null;
+  var retryTimer = null;
+  var timeUp = false;
 
   container.innerHTML =
     '<div class="tests-card take-header"><h2>' + testsEscape(attempt.test.title) + '</h2>' +
       (deadline ? '<p class="take-timer">⏱ <span></span> left</p>' : '') +
-      '<p class="tests-note">Your answers save as you go.</p></div>' +
+      '<p class="tests-note">Your answers save as you go.</p><p class="take-status" role="status"></p></div>' +
     attempt.questions.map(function (q) {
       return '<div class="tests-card take-q" data-question="' + q.id + '">' +
         '<p class="take-prompt"><strong>' + q.position + '.</strong> ' + testsEscape(q.prompt) +
@@ -435,19 +438,59 @@ function renderTake(container, attempt, opts) {
     }).join('') +
     '<button type="button" class="btn btn-primary" id="take-submit">Submit test</button>';
 
+  var statusEl = container.querySelector('.take-status');
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function scheduleRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(function () {
+      retryTimer = null;
+      retry();
+    }, retryMs);
+  }
+
+  function retry() {
+    if (submitState === 'retrying') return submit();
+    if (submitState === 'open') saveDirty();
+  }
+
+  // Saves one answer. Resolves true when the server has it (or refused it as too late),
+  // false on a network/server failure so the caller can retry.
   function save(q) {
-    var request = testsApi('/api/tests/attempts/' + attempt.attemptId + '/answers', {
-      method: 'PUT', body: { questionId: q.id, response: readResponse(container, q) },
-    }).catch(function (err) {
-      if (err.status === 409) return;
-      testsFail(err);
+    var value = readResponse(container, q);
+    return testsApi('/api/tests/attempts/' + attempt.attemptId + '/answers', {
+      method: 'PUT', body: { questionId: q.id, response: value },
+    }).then(function () {
+      if (readResponse(container, q) === value) delete dirty[q.id];
+      if (!timeUp && !Object.keys(dirty).length && submitState === 'open') setStatus('');
+      return true;
+    }, function (err) {
+      if (err.status === 409) {
+        delete dirty[q.id];
+        timeUp = true;
+        setStatus('Time is up — answers after the deadline weren’t saved.');
+        return true;
+      }
+      if (err.status === 401) {
+        testsFail(err);
+        return true;
+      }
+      setStatus('Not saved yet — reconnecting…');
+      scheduleRetry();
+      return false;
     });
-    pending.push(request);
-    return request;
+  }
+
+  function saveDirty() {
+    return Promise.all(attempt.questions.filter(function (q) { return dirty[q.id]; }).map(save))
+      .then(function (results) { return results.every(Boolean); });
   }
 
   attempt.questions.forEach(function (q) {
     var schedule = function () {
+      dirty[q.id] = true;
       clearTimeout(timers[q.id]);
       timers[q.id] = setTimeout(function () { delete timers[q.id]; save(q); }, debounceMs);
     };
@@ -457,23 +500,32 @@ function renderTake(container, attempt, opts) {
     });
   });
 
+  window.addEventListener('online', retry);
+
   function submit() {
-    if (submitted) return;
-    submitted = true;
+    if (submitState === 'submitting' || submitState === 'done') return;
+    submitState = 'submitting';
     if (interval) clearInterval(interval);
-    var flush = attempt.questions.filter(function (q) { return timers[q.id]; }).map(function (q) {
-      clearTimeout(timers[q.id]);
-      delete timers[q.id];
-      return save(q);
-    });
-    Promise.all(pending.concat(flush))
-      .then(function () { return testsApi('/api/tests/attempts/' + attempt.attemptId + '/submit', { method: 'POST', body: {} }); })
-      .then(onSubmitted)
-      .catch(function (err) {
-        if (err.status === 409) return onSubmitted();
-        submitted = false;
-        testsFail(err);
+    Object.keys(timers).forEach(function (id) { clearTimeout(timers[id]); delete timers[id]; });
+    saveDirty()
+      .then(function (allSaved) {
+        if (!allSaved) throw new Error('offline');
+        return testsApi('/api/tests/attempts/' + attempt.attemptId + '/submit', { method: 'POST', body: {} });
+      })
+      .then(function (result) { finish(result); }, function (err) {
+        if (err.status === 409) return finish();
+        if (err.status === 401) return testsFail(err);
+        submitState = 'retrying';
+        setStatus('Couldn’t submit yet — retrying when you’re back online…');
+        scheduleRetry();
       });
+  }
+
+  function finish(result) {
+    submitState = 'done';
+    window.removeEventListener('online', retry);
+    if (retryTimer) clearTimeout(retryTimer);
+    onSubmitted(result);
   }
 
   container.querySelector('#take-submit').addEventListener('click', function () {

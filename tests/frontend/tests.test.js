@@ -134,3 +134,90 @@ describe('renderTake', () => {
     expect(onSubmitted).toHaveBeenCalled();
   });
 });
+
+describe('renderTake when the connection is shaky', () => {
+  const ATTEMPT = {
+    status: 'in_progress', attemptId: 5, test: { title: 'Quiz', event: 'Heredity', timeLimitMin: 20 }, deadlineAt: null,
+    questions: [{ id: 13, position: 1, type: 'Short answer', prompt: 'Name it', choices: null, maxPoints: 1 }],
+    responses: {},
+  };
+
+  // fetch that fails with a network error while `state.offline` is true.
+  function flakyFetch(state, saveStatus = 204) {
+    return vi.fn((url, init) => {
+      if (state.offline) return Promise.reject(new TypeError('Failed to fetch'));
+      if (init && init.method === 'PUT') {
+        return Promise.resolve({ ok: saveStatus < 400, status: saveStatus, json: () => Promise.resolve({ error: 'Time is up' }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ status: 'reviewed', score: 1, maxScore: 1 }) });
+    });
+  }
+
+  function type(window, el, value) {
+    const input = el.querySelector('input[data-q="13"]');
+    input.value = value;
+    input.dispatchEvent(new window.Event('input'));
+  }
+
+  it('shows one quiet banner instead of alerts and re-sends the answer when back online', async () => {
+    const state = { offline: true };
+    const window = setup(flakyFetch(state));
+    const el = window.document.getElementById('app');
+    window.renderTake(el, ATTEMPT, { debounceMs: 0, retryMs: 20 });
+    type(window, el, 'Mendel');
+    await wait(30);
+    expect(window.alert).not.toHaveBeenCalled();
+    expect(el.querySelector('.take-status').textContent).toContain('Not saved yet');
+
+    state.offline = false;
+    await wait(60);
+    const bodies = window.fetch.mock.calls.filter(([, i]) => i && i.method === 'PUT' && !state.offline).map(([, i]) => JSON.parse(i.body));
+    expect(bodies[bodies.length - 1]).toEqual({ questionId: 13, response: 'Mendel' });
+    expect(el.querySelector('.take-status').textContent).toBe('');
+  });
+
+  it('re-sends unsaved answers before submitting', async () => {
+    const state = { offline: true };
+    const onSubmitted = vi.fn();
+    const window = setup(flakyFetch(state));
+    const el = window.document.getElementById('app');
+    window.renderTake(el, ATTEMPT, { debounceMs: 0, retryMs: 10000, onSubmitted });
+    type(window, el, 'Mendel');
+    await wait(20);
+    state.offline = false;
+    const before = window.fetch.mock.calls.length;
+    el.querySelector('#take-submit').click();
+    await wait(30);
+    const calls = window.fetch.mock.calls.slice(before).map(([url, i]) => (i && i.method) + ' ' + url.replace(API, ''));
+    const lastPut = calls.lastIndexOf('PUT /api/tests/attempts/5/answers');
+    const submitAt = calls.indexOf('POST /api/tests/attempts/5/submit');
+    expect(lastPut).toBeGreaterThan(-1);
+    expect(submitAt).toBeGreaterThan(lastPut);
+    expect(onSubmitted).toHaveBeenCalled();
+  });
+
+  it('tells the kid when an answer came in after time was up', async () => {
+    const window = setup(flakyFetch({ offline: false }, 409));
+    const el = window.document.getElementById('app');
+    window.renderTake(el, ATTEMPT, { debounceMs: 0 });
+    type(window, el, 'late');
+    await wait(30);
+    expect(el.querySelector('.take-status').textContent).toBe('Time is up — answers after the deadline weren’t saved.');
+  });
+
+  it('keeps retrying an automatic submit that failed offline', async () => {
+    const state = { offline: true };
+    const onSubmitted = vi.fn();
+    const window = setup(flakyFetch(state));
+    const el = window.document.getElementById('app');
+    window.renderTake(el, { ...ATTEMPT, deadlineAt: new Date(Date.now() + 20).toISOString() }, { debounceMs: 0, tickMs: 10, retryMs: 20, onSubmitted });
+    await wait(60);
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(el.querySelector('.take-status').textContent).toContain('retrying');
+    state.offline = false;
+    await wait(80);
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+    expect(window.confirm).not.toHaveBeenCalled();
+  });
+});
+

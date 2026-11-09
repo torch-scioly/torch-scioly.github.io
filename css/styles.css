@@ -1261,3 +1261,4 @@ img {
 .ta-answer.needs_volunteer { background: #fffbea; }
 .ta-grade { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .ta-grade input { width: auto; padding: 0.3rem; }
+.take-status { color: #9a5b00; font-weight: 600; min-height: 1.2em; margin: 0.3rem 0 0; }
