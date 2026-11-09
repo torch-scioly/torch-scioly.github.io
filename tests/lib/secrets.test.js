@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
-import { hashPin, verifyPin, randomSecret, sha256Hex, signToken, readBearer } from '../../functions/api/_lib/secrets.js';
+import { hashPin, verifyPin, randomSecret, sha256Hex, signToken, readBearer, PIN_ITERATIONS } from '../../functions/api/_lib/secrets.js';
 
 function bearerRequest(token) {
   return new Request('https://example.com', { headers: { Authorization: `Bearer ${token}` } });
@@ -52,5 +52,15 @@ describe('bearer tokens', () => {
 
   it('returns null with no Authorization header', async () => {
     expect(await readBearer(new Request('https://example.com'), env)).toBeNull();
+  });
+});
+
+describe('PIN hashing cost', () => {
+  // Free-plan Workers get ~10 ms of CPU per request; registration hashes one PIN per kid.
+  // A 4-6 digit PIN has at most 1,000,000 values, so the 15-minute lockout, not the
+  // iteration count, is what stops guessing.
+  it('stays cheap enough for the Workers CPU limit', () => {
+    expect(PIN_ITERATIONS).toBeLessThanOrEqual(10000);
+    expect(PIN_ITERATIONS).toBeGreaterThanOrEqual(1000);
   });
 });

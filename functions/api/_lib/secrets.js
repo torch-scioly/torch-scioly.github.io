@@ -2,7 +2,8 @@
 // Kid sessions use bearer tokens (not cookies) because the frontend and API are on
 // different sites and Safari blocks cross-site cookies.
 
-const PIN_ITERATIONS = 100000;
+// Kept low for the Workers CPU limit; the login lockout is the real defense for short PINs.
+export const PIN_ITERATIONS = 10000;
 const DEFAULT_TOKEN_TTL_MS = 4 * 3600 * 1000;
 
 function toHex(bytes) {

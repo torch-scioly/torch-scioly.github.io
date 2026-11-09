@@ -15,7 +15,7 @@
 - Sign-in exists **only** on `tests.html` / `tests-admin.html`. No other page changes except one nav link `Tests` → `tests.html` in every page's `.nav-links`.
 - Never collect kid email, birthday, address or photo. Kid = display name (first name + last initial), grade, school.
 - Answer keys (`answer`, `explanation`) are never in any response to a kid/parent before that attempt is submitted **and** its session (if any) has ended.
-- PINs: 4–6 digits, stored as PBKDF2-SHA256 (100,000 iterations, 16-byte salt). Parent link secrets stored only as SHA-256 hex.
+- PINs: 4–6 digits, stored as PBKDF2-SHA256 (10,000 iterations — Workers CPU limit, see review I5 — 16-byte salt). Parent link secrets stored only as SHA-256 hex.
 - Lockout: 5 wrong PINs → username locked 15 minutes, clears automatically.
 - Kid/parent auth is **not** cookies: kid uses `Authorization: Bearer <token>` (token in `sessionStorage`); parent uses header `X-Parent-Key: <secret>` (secret lives in the URL hash `tests.html#parent=<secret>` and `sessionStorage`).
 - Staff endpoints use the existing `isValidAdminSession(request, env)` from `functions/api/_lib/auth.js`.
