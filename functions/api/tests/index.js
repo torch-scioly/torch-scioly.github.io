@@ -1,6 +1,7 @@
 import { kidFromRequest } from './_lib/attempts.js';
 
-// Tests a signed-in kid can take at home: published, for their school, not session-only.
+// Tests a signed-in kid can take at home (published, for their school, not session-only),
+// plus any test they started and haven't submitted, so a closed tab can always resume.
 export async function onRequestGet({ request, env }) {
   const kid = await kidFromRequest(request, env);
   if (!kid) return Response.json({ error: 'Please sign in' }, { status: 401 });
@@ -14,7 +15,9 @@ export async function onRequestGet({ request, env }) {
                 WHERE a.test_id = t.id AND a.kid_id = ?1 AND a.submitted_at IS NOT NULL AND a.max_score > 0) AS best_percent,
               (SELECT a.id FROM attempts a WHERE a.test_id = t.id AND a.kid_id = ?1 AND a.submitted_at IS NULL) AS open_attempt_id
          FROM tests t
-        WHERE t.published = 1 AND t.session_only = 0 AND t.school = ?2
+        WHERE t.school = ?2
+          AND ((t.published = 1 AND t.session_only = 0)
+               OR EXISTS (SELECT 1 FROM attempts a WHERE a.test_id = t.id AND a.kid_id = ?1 AND a.submitted_at IS NULL))
         ORDER BY t.event, t.title`
     )
     .bind(kid.id, kid.school)

@@ -30,13 +30,12 @@ export async function loadAttemptForViewer(db, attemptId, viewer) {
   return attempt;
 }
 
-// In-session reviews stay locked until the volunteer ends the session (or it expires),
-// so answer keys don't spread around the room.
+// While any session for a test is running, reviews of every attempt at that test stay
+// locked (session or home), so answer keys don't spread around the room.
 export async function isReviewLocked(db, attempt) {
-  if (!attempt.session_id) return false;
   const row = await db
-    .prepare(`SELECT ended_at IS NULL AND expires_at > datetime('now') AS open FROM test_sessions WHERE id = ?`)
-    .bind(attempt.session_id)
+    .prepare(`SELECT 1 AS open FROM test_sessions WHERE test_id = ? AND ended_at IS NULL AND expires_at > datetime('now')`)
+    .bind(attempt.test_id)
     .first();
   return Boolean(row?.open);
 }

@@ -96,3 +96,13 @@ describe('GET /api/admin/kids', () => {
     expect(kids[0].events).toEqual([{ event: 'Heredity', firstAttemptAvgPercent: 13, tests: 1 }]);
   });
 });
+
+describe('in-progress attempts (I4)', () => {
+  it('shows staff who started but hasn’t submitted', async () => {
+    const { cookie, testId, token } = await setup();
+    await startAttempt({ request: jsonRequest('POST', {}, auth(token)), env, params: { id: String(testId) } });
+    const data = await results(cookie, testId);
+    expect(data.attempts).toHaveLength(0);
+    expect(data.inProgress).toEqual([{ attemptId: expect.any(Number), kid: { id: expect.any(Number), displayName: 'Aarav K' }, startedAt: expect.stringMatching(/Z$/) }]);
+  });
+});

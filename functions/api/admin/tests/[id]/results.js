@@ -28,7 +28,16 @@ export async function onRequestGet({ request, env, params }) {
     .bind(test.id)
     .all();
 
+  const { results: open } = await env.DB
+    .prepare(
+      `SELECT a.id, a.kid_id, a.started_at, k.display_name FROM attempts a JOIN kids k ON k.id = a.kid_id
+        WHERE a.test_id = ? AND a.submitted_at IS NULL ORDER BY a.started_at`
+    )
+    .bind(test.id)
+    .all();
+
   return Response.json({
+    inProgress: open.map((a) => ({ attemptId: a.id, kid: { id: a.kid_id, displayName: a.display_name }, startedAt: sqliteToIso(a.started_at) })),
     test: { id: test.id, title: test.title, event: test.event, school: test.school },
     questions: questions.map((q) => ({ id: q.id, position: q.position, prompt: q.prompt, type: q.type, maxPoints: q.points })),
     attempts: attempts.map((a) => ({

@@ -224,6 +224,8 @@ function taShowResults(testId) {
       taView().innerHTML =
         '<div class="tests-card"><h2>' + taEscape(r.test.title) + '</h2>' +
           (r.needsVolunteer ? '<p class="ta-errors">⏳ ' + r.needsVolunteer + ' written answer(s) need a volunteer to grade.</p>' : '') +
+          (r.inProgress && r.inProgress.length ? '<p class="tests-note">Still working (not submitted): ' +
+            r.inProgress.map(function (a) { return taEscape(a.kid.displayName); }).join(', ') + '</p>' : '') +
           '<h3>Question stats</h3><ul>' + r.questionStats.map(function (s) {
             return '<li>Q' + s.position + ': ' + (s.percentCorrect === null ? '–' : s.percentCorrect + '% correct') + '</li>';
           }).join('') + '</ul></div>' +

@@ -234,3 +234,30 @@ describe('in-session tests', () => {
     expect((await joinWithCode({ request: jsonRequest('POST', { code: session.code }, auth(token)), env })).status).toBe(400);
   });
 });
+
+describe('review lock while a session is running (I3)', () => {
+  it('locks a home attempt at the same test until the session ends', async () => {
+    const { cookie, testId, token } = await setup();
+    const session = await (await startSession({ request: jsonRequest('POST', {}, { Cookie: cookie }), env, params: { id: String(testId) } })).json();
+    const { data } = await start(token, testId); // home attempt, no code
+    const result = await submitAttempt(token, data.attemptId);
+    expect(result.data.status).toBe('waiting_for_session');
+    expect((await view(auth(token), data.attemptId)).data.status).toBe('waiting_for_session');
+    await endSession({ request: jsonRequest('POST', {}, { Cookie: cookie }), env, params: { code: session.code } });
+    expect((await view(auth(token), data.attemptId)).data.status).toBe('reviewed');
+  });
+});
+
+describe('unfinished session attempts (I4)', () => {
+  it('still lists a session-only test the kid has an unfinished attempt at, so they can resume', async () => {
+    const { cookie, testId, token } = await setup();
+    await updateTest({ request: jsonRequest('PUT', { sessionOnly: true }, { Cookie: cookie }), env, params: { id: String(testId) } });
+    const session = await (await startSession({ request: jsonRequest('POST', {}, { Cookie: cookie }), env, params: { id: String(testId) } })).json();
+    const { attemptId } = await (await joinWithCode({ request: jsonRequest('POST', { code: session.code }, auth(token)), env })).json();
+    await endSession({ request: jsonRequest('POST', {}, { Cookie: cookie }), env, params: { code: session.code } });
+
+    const list = await (await listTests({ request: jsonRequest('GET', undefined, auth(token)), env })).json();
+    expect(list).toEqual([expect.objectContaining({ id: testId, openAttemptId: attemptId })]);
+    expect((await submitAttempt(token, attemptId)).response.status).toBe(200);
+  });
+});
